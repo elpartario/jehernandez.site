@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script src="js/theme-init.js"></script>
+	<title>Contact — J.E. Hernández</title>
+	<link rel="icon" type="image/png" href="assets/favicon.png">
+	<link rel="stylesheet" href="css/site.css">
+</head>
+<body class="page">
+
+	<div class="lc-wrap">
+		<span class="lc-date"></span>
+		<button id="whyBtn" class="why-btn" aria-label="Why this date?">?</button>
+	</div>
+	<nav class="menu"></nav>
+
+	<canvas id="mini" width="104" height="104" data-color="ink" aria-hidden="true"></canvas>
+	<a id="corner" href="index.html" aria-label="Home"></a>
+
+
+	<main class="sheet">
+		<h1>Hello!</h1>
+		<p>If you have any questions regarding invoices, leasing my music, collaboration, or you
+		just want to say hello, please fill out the form below.</p>
+		<p>Or, alternatively, email me:
+		<span class="copy-email" data-copy="jose.e.h.lopez@gmail.com" title="Click to copy"><u>jose.e.h.lopez@gmail.com</u></span>
+		<span class="muted">(click to copy)</span></p>
+
+		<h2>What I do</h2>
+		<p>Film Composition · Commissions · Artistic Direction · Lecturing</p>
+
+		<h2>Let&#8217;s work together</h2>
+		<form class="cform" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+			<input type="hidden" name="form-name" value="contact">
+			<p style="display:none"><label>Don&#8217;t fill this out: <input name="bot-field"></label></p>
+			<input type="text" name="name" placeholder="Name" required>
+			<input type="email" name="email" placeholder="Email" required>
+			<textarea name="message" rows="6" placeholder="Your message" required></textarea>
+			<button type="submit">Send</button>
+		</form>
+		<p class="muted">(The form becomes live once the site is deployed on Netlify — until
+		then, use the email above.)</p>
+			<footer class="foot"></footer>
+	</main>
+
+	<div id="why" class="why-modal">
+		<div class="why-card"></div>
+	</div>
+
+	<script src="js/site.js"></script>
+	<script src="js/skull-rot.js"></script>
+	<script src="js/mini-skull.js"></script>
+</body>
+</html>
