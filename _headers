@@ -1,9 +1,0 @@
-# Security headers — applied by Netlify (GitHub Pages ignores this file).
-# CSP: only this site's own scripts/styles/images/fonts run, embeds may only
-# come from the four whitelisted players, and nothing may iframe this site.
-/*
-  X-Content-Type-Options: nosniff
-  X-Frame-Options: DENY
-  Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'; connect-src 'self'; frame-src https://www.youtube.com https://player.vimeo.com https://w.soundcloud.com https://embed.music.apple.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
