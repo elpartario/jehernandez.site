@@ -38,7 +38,9 @@ The [README](README.md) is the short version; this is the complete one.
    - [8.5 Why phones used to show the skull off-center](#85-why-phones-used-to-show-the-skull-off-center)
    - [8.6 Crediting the inspiration](#86-crediting-the-inspiration)
    - [8.7 The heart surprise (skull ↔ heart morph)](#87-the-heart-surprise-skull--heart-morph)
+   - [8.8 The audio: three tracks + the Mayan-numeral selector](#88-the-audio-three-tracks--the-mayan-numeral-selector)
 9. [Security notes](#9-security-notes)
+10. [Changelog](#10-changelog)
 
 ---
 
@@ -46,7 +48,11 @@ The [README](README.md) is the short version; this is the complete one.
 
 ### 1.1 Change the music
 
-The track is `assets/loop.mp3`. To swap it:
+The site now has **three** soundtracks, chosen by the Mayan numerals beside the
+teponaztli — `assets/loop.mp3` (numeral 1), `assets/cicadas.mp3` (2), and
+`assets/blue14.mp3` (3). The steps below swap the default (track 1); to swap
+track 2 or 3, or add a fourth, see [8.8](#88-the-audio-three-tracks--the-mayan-numeral-selector)
+(same commands, different filename). To swap track 1:
 
 1. Replace `assets/loop.mp3` with any MP3, **keeping the same filename**. Done —
    no code changes. It loops automatically, and the loop **crossfades** (~0.5s)
@@ -627,7 +633,11 @@ heart). The overlay page is **not red** — it takes the current theme
    they appear if nothing is clicked (see [8.2](#82-the-landing-hints)); styles
    are under `#hint` / `#hintDrag` in index.html. No menu, no corner skull yet.
    **Music starts only when the teponaztli is pressed** — browsers forbid
-   autoplay with sound anyway, so the switch is explicit.
+   autoplay with sound anyway, so the switch is explicit. On that first press,
+   three **Mayan numerals (𝋡 𝋢 𝋣)** slide out from behind the teponaztli:
+   they pick between three soundtracks (1 lit by default, the others dim), a
+   click crossfades to that track, and they retract when the sound is turned
+   off. Full detail in [8.8](#88-the-audio-three-tracks--the-mayan-numeral-selector).
 
    **The heart surprise fits into this state.** A few seconds after the hints
    clear (`CFG.heart.appearAfter`, default 5s), a small particle **heart button
@@ -1297,18 +1307,105 @@ render loop. Here's each, from easiest to most involved:
   (big screens). To make it bigger/smaller, scale all three numbers together
   (e.g. ×1.33 → `clamp(128px, 15vmax, 220px)`); to pin one fixed size instead,
   just write a single value like `110px`.
-- **Corner-button vertical position** — the `bottom` on the `#swapBtn` rule
-  (currently `calc(2.5vmax - 0.6em)`). `bottom` is the gap from the bottom of
-  the screen up to the button, so **a smaller number sits lower** and a larger
-  number sits higher. This one value applies on both desktop and mobile (there
-  is no separate mobile override anymore — the bottom menu it used to dodge is
-  hidden on the black landing, appearing only with the overlay, which covers
-  the button regardless).
+- **Corner-button position** — two values on the `#swapBtn` rule.
+  `bottom` (currently `calc(2.5vmax - 1.5em)`) is the gap from the bottom of
+  the screen up to the button, so **a smaller number sits lower**. `right`
+  (currently `1.4vmax`) is the gap from the right edge, so **a smaller number
+  sits further right**. Both apply on desktop and mobile (there is no separate
+  mobile override — the bottom menu it used to dodge is hidden on the black
+  landing, appearing only with the overlay, which covers the button anyway).
 
 The bottom-right preview **also morphs** when clicked, mirroring the big shape
 (it always shows what the *next* click produces), and it shares `spinSpeed`,
 `beatAmp/Rate` and the beat's mouse mapping automatically — so those edits
 carry over with no extra work.
+
+---
+
+### 8.8 The audio: three tracks + the Mayan-numeral selector
+
+The teponaztli (bottom-left) is the on/off switch; three Mayan numerals to its
+right pick **which** of three soundtracks plays. All three loop seamlessly and
+crossfade into one another.
+
+**The flow.** On first click of the teponaztli the audio starts on track 1 and
+the numerals **𝋡 𝋢 𝋣** slide out from behind the teponaztli toward the center
+(staggered). They're dim except the playing one, which is lit; 𝋡 (track 1) is
+lit by default. Clicking a numeral crossfades from the current track to that
+one over `CFG.audioFade` seconds. Clicking the teponaztli again turns the sound
+off (master fade) and the numerals **retract back behind the teponaztli**;
+clicking it once more brings them and the sound back on the last-selected
+track. While audio is off the numerals are inert.
+
+**Changing which sounds play.** The three tracks are the `TRACKS` array near
+the top of the audio section in `index.html`:
+
+```js
+const TRACKS = [
+  { url: 'assets/loop.mp3',    fb: 'assets/audio.js',   b64: 'AUDIO_B64' },   // numeral 1
+  { url: 'assets/cicadas.mp3', fb: 'assets/cicadas.js', b64: 'CICADAS_B64' }, // numeral 2
+  { url: 'assets/blue14.mp3',  fb: 'assets/blue14.js',  b64: 'BLUE14_B64' },  // numeral 3
+];
+```
+
+Array order = numeral order (1, 2, 3). To swap a sound, replace its `.mp3`
+(keep the filename) and regenerate its base64 file:// fallback — the same
+two commands as [§1.1](#11-change-the-music), pointed at that file, e.g. for
+track 2:
+
+```
+"C:\Program Files\Derivative\TouchDesigner\bin\ffmpeg.exe" -i "new.wav" -codec:a libmp3lame -b:a 192k assets\cicadas.mp3
+python -c "import base64; open('assets/cicadas.js','w').write('window.CICADAS_B64 = ' + repr(base64.b64encode(open('assets/cicadas.mp3','rb').read()).decode()) + ';')"
+```
+
+To add a **fourth** track: add a row to `TRACKS` (its own `.mp3`, `.js`
+fallback name, and a unique `b64` variable that matches the `window.NAME_B64`
+your fallback writes), then add a `<button class="tnum" data-track="3">𝋤</button>`
+to the `#tracks` block in the HTML (𝋤 is `&#x1D2E4;`, Mayan numeral 4). The
+selector logic is fully generic — no other code changes.
+
+**How it works.** No `<audio>` element: each track's MP3 is fetched and decoded
+into a buffer, then looped by re-spawning short crossfading passes (the same
+seamless-loop trick as before, now one scheduler per track). Every track has
+its **own gain node** feeding a shared analyser (for the reactivity) and the
+master mute; switching tracks simply ramps the old track's gain to 0 and the
+new one's to 1 over `CFG.audioFade`, which is the crossfade. Track 1 loads
+immediately; tracks 2 and 3 preload in the background the moment the teponaztli
+is first pressed, so switching is instant. Playback only ever starts on a
+click/tap — browsers forbid autoplay with sound.
+
+**Knobs.**
+- **Crossfade length** (both the loop seams *and* track-switch fades):
+  `CFG.audioFade` (seconds) in the `CFG` block. Sensitivity of the reactivity
+  is still `CFG.audioSens` / `CFG.audioPush` (see [3.5](#35-audio-pipeline)).
+- **Numeral position** — the `#tracks` rule in `index.html`'s `<style>`.
+  `left` sets where the row starts (it clears the teponaztli's width); `gap` is
+  the spacing between numerals; `.tnum` `font-size` is their size; the slide
+  distance is the `translateX(-2.4em)` on `.tnum` (how far left they start, i.e.
+  how far they travel out), and the per-numeral `transition-delay`s are the
+  stagger.
+  - **Vertical position (the important one)** — the numeral row is **centered
+    on the teponaztli's SVG glyph**, and it stays centered at every screen size
+    because it's anchored to the same measurements the teponaztli is built from.
+    The single knob is the `--tnum-center` custom property on `#tracks`: it is
+    the distance from the **bottom of the screen up to the center of the glyph**,
+    and **raising it moves the numerals up**, lowering it moves them down. Its
+    default is `calc(2.5vmax + 1.4rem + 0.334 * clamp(64px, 7.5vmax, 110px))`,
+    which is, piece by piece: `2.5vmax` (the teponaztli's own gap from the
+    bottom) `+ 1.4rem` (the height of the "(audio on/off)" caption that sits
+    under the glyph) `+ 0.334 × the teponaztli's width` (half the glyph's
+    height — the teponaztli SVG is 382×255, so its height is ≈ 0.667 × its
+    width, and half of that is 0.334×). The `transform: translateY(50%)` right
+    below it is what actually parks the row's own center on that line, so you
+    never have to account for the numerals' own height — just move
+    `--tnum-center`. If you resize the teponaztli (its `width` clamp) or change
+    its caption, nudge the `1.4rem`/`0.334` terms to match.
+- **Numeral font** — `MayanNumerals` (Noto Sans Mayan Numerals, subset to the
+  digits), `@font-face` at the top of the `#tracks` CSS. The glyphs are the
+  real Unicode Mayan numerals `&#x1D2E1;`–`&#x1D2E3;` (bars-and-dots).
+- **Colors** — dim/lit use `--color-icon` (rest) and `--color-main` (hover),
+  the same accent variables as everything else; opacity `0.35` (dim) vs `1`
+  (active/lit) is in the `.tnum` rules.
 
 ---
 
@@ -1345,3 +1442,111 @@ What's already in place:
 - If you ever add a `<meta http-equiv="Content-Security-Policy">` copy of the
   CSP for GitHub Pages, note `frame-ancestors` doesn't work in meta tags —
   it's header-only.
+
+---
+
+## 10. Changelog
+
+Newest first. This starts partway through the project, so the earliest entries
+are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-12 — multi-track audio, numerals, polish
+- **Audio: three soundtracks + Mayan-numeral selector (§8.8).**
+  - Converted `Cicadas and Quetzal.wav` → `assets/cicadas.mp3` and
+    `Blue 14.wav` → `assets/blue14.mp3` (192 kbps, via TouchDesigner's ffmpeg),
+    each with a base64 `file://` fallback (`cicadas.js`, `blue14.js`).
+  - Imported **Noto Sans Mayan Numerals**, subset to the digit glyphs →
+    `assets/fonts/MayanNumerals.woff2` (6.6 KB); the numerals are the real
+    Unicode bars-and-dots `𝋡 𝋢 𝋣` (U+1D2E1–3).
+  - **Rewrote the audio engine**: a `TRACKS` array, one gain node per track, a
+    per-track self-crossfading loop scheduler, and `selectTrack()` that
+    crossfades old→new over `CFG.audioFade`. Track 1 loads immediately; 2 and 3
+    preload when the teponaztli is first pressed.
+  - **UI**: the numerals slide out from behind the teponaztli on audio-on
+    (`body.audio-on`, staggered), dim except the lit active track (1 by
+    default), and retract on audio-off. Wired `#tracks` markup + `.tnum` CSS.
+- **Numeral vertical position** anchored to the teponaztli SVG's center via a
+  single `--tnum-center` knob (built from the same vmax/width pieces so it
+  tracks all screen sizes) + `translateY(50%)`; documented the logic in §8.8.
+- **Heart/skull corner button** nudged right + lower (`#swapBtn` `right: 1.4vmax`,
+  `bottom: calc(2.5vmax - 1.5em)`) to line up with the teponaztli.
+- **Cuicatl "?" modal** text made a standalone, independently editable string
+  (`CUICATL_TEXT`) instead of an alias of `WHY_TEXT`.
+- Both **"?" buttons** now turn `--color-main` on hover, matching links (one
+  shared `.why-btn:hover` rule).
+- **Docs**: added §8.8 and this changelog; added §8.8 + §10 to the Contents;
+  added the overlay-portfolio ordering explainer (§1.2, CSS-grid source order);
+  documented the heart's rotation/tilt/beat knobs (§8.7); mirrored the audio
+  feature into §1.1, §3.1, and the README; and swept stale info out of
+  §2 (file tree), §3.1 (still-"red" language, missing heart), §4.2 (menu
+  colors), and §6 (assets). Added the "list changed files each message" habit.
+
+### 2026-07-11 — modals, licensing, dark default
+- **Cuicatl explainer modal** — a second "?" modal beside "Cuicatl" on the
+  full-works page, wired through a new reusable `wireModal(btnId, modalId, html)`
+  in `js/site.js` (refactored the date modal onto it too).
+- **LICENSE** added — proprietary, source-available, **study-only**: viewing
+  and running locally is allowed, all copying/deploying/reuse needs written
+  permission; third-party fonts carved out.
+- **Default theme flipped to dark**, centralized in a new `js/theme-init.js`
+  (`THEME_DEFAULT` — one line), loaded synchronously in every page's `<head>`
+  so there's no light-flash before paint; the toggle still overrides + persists.
+- **Copyright year auto-fills** from the current date in `js/site.js` (footer),
+  and the hardcoded "2026" in the overlay was replaced with the injected year.
+- **Heart beat reworked** to a center-proximity **particle pulse**: beats
+  faster/stronger as the cursor nears screen center (`CFG.heart.beatReach`),
+  independent of the skull.
+- **Skull's mouse-driven particle push turned off** (it still follows the mouse
+  and reacts to audio; only the mouse-position noise push was removed).
+- Long-count date lowered to align with the menu/mini-skull; why-modal links
+  restyled to follow the site; morph button enlarged ×1.5.
+
+### 2026-07-08 — the heart surprise
+- Added the **skull ↔ heart morph**: converted `Heart Centered 2.obj` →
+  `assets/heart.bin` (padded to the **same 160k points** as the skull so
+  particles pair 1:1), added `aH` + a `uMorph` blend to the vertex shader, and
+  a bottom-right **preview button** (`#swapBtn`) that shows the shape a click
+  morphs into.
+- The heart **rotates** with time (`spinSpeed`, TD `absTime` style) and
+  **beats** with the audio; it's clickable to enter the site; the mini corner
+  skull/heart morphs too. Appear timers: `appearAfter` (first load, after the
+  hints clear) and `appearAfterReturn` (after coming back from the overlay).
+- Whole feature gated by `CFG.heart.enabled` (false = original skull-only site).
+- **Fixed a spin-speed bug** where the morph rotation accelerated the longer
+  the page was open (accumulated `simT`); switched to a wrapped spin angle.
+
+### 2026-07-07 — theme, chrome, deploy
+- **Light/dark theming** with a sun/moon toggle; all colors moved to CSS
+  variables (`:root` light + `html.dark`); the overlay and why-modal colors
+  pulled into those variables so they flip too. Landing stays black in both.
+- **strangeTrig background**: exposed all **seven** attractor types from the
+  `.tox`, with a per-load randomizer (`typeRandom` / `typePool`) and a
+  `?trig=N` URL override for previewing; background stretches to fill the
+  viewport and reacts to audio.
+- **Menu & footer single-sourced** in `js/site.js` (`MENU_LINKS` /
+  `FOOTER_LINKS`), injected on every page; the menu rides with the overlay on
+  the landing; the mobile menu was kept to one line (no icon wrap).
+- **Audio** switched from an `<audio>` element to a decoded AudioBuffer with a
+  self-crossfading loop (seamless looping, analysis survives muting).
+- **URL parity** with jehernandez.music: pages restructured to `/about`,
+  `/work`, `/flow`, `/work/<slug>`; added `_redirects` (`/store` → Square),
+  `_headers` (CSP + hardening), `.nojekyll`, and a skull-rendered favicon.
+- **Landing hints** (bobbing arrow + text) with staggered fade-in timing and a
+  10s auto-retire; mobile positioning fixes.
+- Renamed the project folder `website-starter` → `jehernandez`.
+
+### 2026-07-06 — initial build
+- **Coyote-skull point cloud** (`assets/skull.bin`, 160k points via
+  `tools/obj2points.py`) rendered in raw WebGL: mouse-look ("looks at" the
+  cursor), constant TD-style noise "breathing," and an audio-reactive outward
+  pulse (low/mid/high FFT with per-band auto-gain).
+- **strangeTrig attractor background** ported from `strangeTrig.tox`, rendered
+  blurry and low-res behind the skull.
+- **Teponaztli** audio toggle; **Maya Long Count date** (GMT correlation,
+  computed in `js/site.js`); the 404-style **overlay home** (bio, portfolio
+  embeds, links) that freezes the scene while open.
+- **All pages ported** from jehernandez.music — about (full bio + press), work
+  (banner gallery), flow (full categorized list), contact (Netlify form +
+  copy-email), and 16 individual work pages with their embeds and notes.
+- Self-hosted **Academico** + **Mallory** fonts (one-line font switch);
+  base64 `file://` fallbacks for skull + audio; the README and this document.
