@@ -3,16 +3,41 @@
 Everything the site does, where it lives, and how to change it yourself.
 The [README](README.md) is the short version; this is the complete one.
 
-**Contents**
+**Contents** — every sub-heading is a link; click to jump.
 
-1. [Quick recipes](#1-quick-recipes) — music, work pages, colors, fonts, skull, deploy, writing HTML
+1. [Quick recipes](#1-quick-recipes)
+   - [1.1 Change the music](#11-change-the-music)
+   - [1.2 Add a new work page](#12-add-a-new-work-page)
+   - [1.3 Change colors](#13-change-colors)
+   - [1.4 Change fonts (the font switch)](#14-change-fonts-the-font-switch)
+   - [1.5 Re-orient / resize the skull](#15-re-orient--resize-the-skull)
+   - [1.6 The strangeTrig background: on/off and picking an attractor](#16-the-strangetrig-background-onoff-and-picking-an-attractor)
+   - [1.7 Edit the texts (and the menu / footer)](#17-edit-the-texts-and-the-menu--footer--one-place-each)
+   - [1.8 Deploy and local preview](#18-deploy-and-local-preview)
+   - [1.9 URL parity with the old site](#19-url-parity-with-the-old-site)
+   - [1.10 Writing HTML here: a mini style guide](#110-writing-html-here-a-mini-style-guide)
 2. [How the site is organized](#2-how-the-site-is-organized)
 3. [The front page, piece by piece](#3-the-front-page-piece-by-piece)
+   - [3.1 The entry flow](#31-the-entry-flow)
+   - [3.2 CFG reference](#32-cfg-reference)
+   - [3.3 The skull](#33-the-skull)
+   - [3.4 The strangeTrig background](#34-the-strangetrig-background)
+   - [3.5 Audio pipeline](#35-audio-pipeline)
+   - [3.6 The mini corner skull](#36-the-mini-corner-skull)
 4. [Shared elements on every page](#4-shared-elements-on-every-page)
+   - [4.1 The long-count date](#41-the-long-count-date)
+   - [4.2 Chrome](#42-chrome)
 5. [Inner-page anatomy](#5-inner-page-anatomy)
 6. [Assets and tools](#6-assets-and-tools)
 7. [Troubleshooting](#7-troubleshooting)
 8. [Theme system, hints, and 2026-07 additions](#8-the-theme-system-hints-and-other-2026-07-additions)
+   - [8.1 Light / dark](#81-light--dark)
+   - [8.2 The landing hints](#82-the-landing-hints)
+   - [8.3 The audio loop crossfade](#83-the-audio-loop-crossfade)
+   - [8.4 The favicon](#84-the-favicon)
+   - [8.5 Why phones used to show the skull off-center](#85-why-phones-used-to-show-the-skull-off-center)
+   - [8.6 Crediting the inspiration](#86-crediting-the-inspiration)
+   - [8.7 The heart surprise (skull ↔ heart morph)](#87-the-heart-surprise-skull--heart-morph)
 9. [Security notes](#9-security-notes)
 
 ---
@@ -264,7 +289,7 @@ switches:
 bg: { enabled: true,         // set false to turn the background off entirely
       type: 0,               // attractor type 0..6, used when typeRandom is false
       typeRandom: true,      // true = pick a random type from typePool on each load
-      typePool: [0, 1, 3, 4],// which types the randomizer draws from
+      typePool: [0, 1, 3, 4, 6],// which types the randomizer draws from
 ```
 
 `enabled: false` = pure black behind the skull, zero background GPU cost,
@@ -282,7 +307,7 @@ identical across types. Types 4–6 also use the `D0` parameter (default
 
 - `typeRandom: true` (the default) — every time the page loads, the
   background randomly becomes one of the types listed in `typePool`
-  (currently `[0, 1, 3, 4]`, evenly chosen). Refreshing gives you a
+  (currently `[0, 1, 3, 4, 6]`, evenly chosen). Refreshing gives you a
   different one. Edit `typePool` to change the menu it draws from — e.g.
   `[2, 5, 6]`, or a single-item list like `[3]` to effectively pin it.
 - `typeRandom: false` — the randomizer is off and the background always
@@ -294,7 +319,7 @@ one type for that visit and **beats the randomizer** — handy for previewing
 each formula. Remove the `?trig=` from the URL to hand control back to
 `typeRandom`. On every load the browser console prints the chosen type and
 whether it was random or fixed, e.g. `[site] strangeTrig type: 4 (random
-from [0,1,3,4])`.
+from [0,1,3,4,6])`.
 
 ### 1.7 Edit the texts (and the menu / footer — one place each)
 
@@ -305,6 +330,16 @@ from [0,1,3,4])`.
   and the ? modal updates on every page at once. (The `#why` blocks in the
   HTML files are empty shells that site.js fills — don't put text in them,
   it would be overwritten.)
+- **"Cuicatl" explainer** (the "?" beside *Cuicatl* on the full-works page):
+  its text is the `CUICATL_TEXT` constant right under `WHY_TEXT` in
+  `js/site.js` (currently set to the same text as the date modal — replace the
+  string when you have real copy). It reuses the same modal styling.
+  **To add another "?" explainer anywhere**: in the HTML, put a
+  `<button class="why-btn" id="myBtn">?</button>` where you want the mark and a
+  `<div class="why-modal" id="myModal"><div class="why-card"></div></div>` shell
+  near the end of the page; then add one line in js/site.js:
+  `wireModal('myBtn', 'myModal', 'your HTML text');`. (The `.why-btn` only shows
+  on inner/overlay pages by design.)
 - **Menu**: **one place** — the `MENU_LINKS` list at the top of `js/site.js`
   (`['label', 'destination']` pairs; destinations without `http` are pages of
   this site, full URLs open in a new tab). Icons after the links live in
@@ -487,36 +522,45 @@ should be 16:9 (video) rather than fixed-height (audio players).
 
 ```
 jehernandez/
-├── index.html            the landing experience (skull → red overlay home)
-├── about.html            full bio + press            → /about
-├── work.html             featured works list         → /work
-├── flow.html             full categorized list       → /flow
-├── contact.html          email + Netlify form        → /contact
-├── work/<slug>.html ×16  one page per piece          → /work/<slug>
+├── index.html            the landing experience (skull/heart → overlay home)
+├── about.html            full bio + press             → /about
+├── work.html             featured works (banners)     → /work
+├── flow.html             full categorized list        → /flow
+├── contact.html          email + Netlify form         → /contact
+├── work/<slug>.html ×16  one page per piece           → /work/<slug>
 ├── _redirects            Netlify redirects (/store → Square store; Netlify-only)
+├── _headers              Netlify security headers (CSP etc.; Netlify-only, §9)
 ├── .nojekyll             tells GitHub Pages not to run Jekyll (harmless elsewhere)
 ├── css/site.css          ALL shared styling (colors, fonts, layout, chrome)
-├── js/site.js            long count date, why-modal, copy-email, top button
-├── js/skull-rot.js       THE skull orientation (single source for all pages)
-├── js/mini-skull.js      corner skull renderer for inner pages
+├── js/
+│   ├── site.js           date, menu, footer, theme toggle, modals, copy-email
+│   ├── theme-init.js     the pre-paint light/dark default (loaded in every <head>)
+│   ├── skull-rot.js      THE skull orientation (single source for all pages)
+│   └── mini-skull.js     corner-skull renderer for inner pages
 ├── assets/
-│   ├── skull.bin         160,000-point coyote skull (int16, 1.2 MB)
+│   ├── skull.bin         160,000-point coyote skull (int16, 1.28 MB)
 │   ├── skull.js          same data, base64 (file:// fallback only)
+│   ├── heart.bin         160,000-point heart, the morph target (int16, 1.28 MB)
+│   ├── heart.js          same data, base64 (file:// fallback only)
 │   ├── loop.mp3          the music (see recipe 1.1)
 │   ├── audio.js          same audio, base64 (file:// fallback only)
-│   ├── winal.svg         winal glyph (currently unused, kept for later)
+│   ├── favicon.png       browser-tab icon, rendered from the skull (§8.4)
 │   ├── teponaztli.svg    sound icon source (the live copy is inlined in index.html)
+│   ├── winal.svg         winal glyph (currently unused, kept for later)
 │   ├── headshot.jpg      bio photo
 │   ├── work/             16 banner images for work.html (1200×280 jpg, recipe 1.2)
 │   ├── fonts/            Academico ×4 + Mallory ×4 woff2 (the font switch, recipe 1.4)
 │   └── Voces-Fantasmas-Program-Notes.pdf
-├── tools/obj2points.py   OBJ → skull.bin converter
+├── tools/
+│   ├── obj2points.py     OBJ → point-cloud .bin converter (skull + heart, §6)
+│   └── make-favicon.py   renders assets/favicon.png from the point cloud (§8.4)
 ├── README.md             short overview
 └── DOCUMENTATION.md      this file
 ```
 
-Legacy files from the study phase (unused by the site): `styles.css`,
-`example-dunes.glsl`, `glslsandbox-404zero.glsl`.
+The landing WebGL (skull, heart, strangeTrig background, audio) all lives
+inline in `index.html`; `css/site.css` and the four `js/` files are shared by
+every page.
 
 ---
 
@@ -587,9 +631,23 @@ Everything tunable sits in one object near the top of the main `<script>` in
 | `bg.audioWobble` | 0.3 | how much the music bends B (extra motion on hits) |
 | `bg.blurDiv` | 2 | background renders at 1/blurDiv resolution (2 = half res; higher = blurrier/cheaper) |
 | `bg.blurPx` | 1.1 | blur tap spread in buffer pixels (higher = softer) |
+| `bg.type` | 0 | which attractor formula (0–6) — only used when `typeRandom` is false (§1.6) |
+| `bg.typeRandom` | true | pick a random type from `typePool` each page load; false = always use `bg.type` |
+| `bg.typePool` | [0,1,3,4,6] | the types the randomizer draws from |
+| `heart.enabled` | true | master switch for the whole heart surprise; false = skull-only, no heart download (§8.7) |
+| `heart.appearAfter` | 5 | seconds after the hints clear before the heart button appears (first load) |
+| `heart.appearAfterReturn` | 3 | seconds after returning to the landing before it appears |
+| `heart.morphSpeed` | 0.035 | how fast the skull↔heart morph eases (bigger = snappier) |
+| `heart.beatAmp` | 0.14 | strongest particle push at a beat's peak (grows toward screen center) |
+| `heart.beatRate` | 1.15 | base beats per second (up to ~2.4× faster toward screen center) |
+| `heart.beatReach` | 0.6 | center-pull radius in screen-halves: beat is full at center, fades to 0 this far out |
+| `heart.spinSpeed` | 0.25 | heart rotation, radians/sec (negative reverses; 0 = still) |
+
+Full detail on the heart's motion (spin axis, tilt, beat mapping) is in §8.7.
 
 URL overrides for experimenting (don't persist):
-`?rot=x:-90,z:-90,x:90` (orientation, see 1.5) and `?scale=0.6`.
+`?rot=x:-90,z:-90,x:90` (orientation, see 1.5), `?scale=0.6`, and
+`?trig=N` (force attractor type N, 0–6, overriding the randomizer — §1.6).
 
 ### 3.3 The skull
 
@@ -687,15 +745,18 @@ un-muted if it hasn't started; afterwards it toggles the gain between 0 and 1
 Two implementations, one orientation source (`js/skull-rot.js`):
 
 - **Front page**: drawn in the main render loop onto `canvas#mini` (its own
-  WebGL context so it can sit *above* the red overlay). Red over the black
-  scene; switches to ink automatically while the overlay is open. Audio
-  reactive. Clicking it (the `#corner` button) toggles the overlay — the
+  WebGL context so it can sit *above* the overlay). Red over the black scene;
+  switches to the page's `--ink` automatically while the overlay is open (and
+  re-reads it on every theme flip, so it stays visible in light and dark).
+  Audio reactive. Clicking it (the `#corner` button) toggles the overlay — the
   404-dot mechanic.
-- **Inner pages**: `js/mini-skull.js` renders it ink-colored
-  (`data-color="ink"` on the canvas), mouse-following, 22k points; `#corner`
-  is a link back to the fresh landing (`index.html`), so visitors restart
-  from the skull. The skull.bin request hits the browser cache, so inner
-  pages stay light.
+- **Inner pages**: `js/mini-skull.js` renders it in the current `--ink` color
+  (it reads that CSS variable and updates on the `themechange` event — so it's
+  near-black in light mode, near-white in dark, automatically; the old
+  `data-color` attribute on the canvas is vestigial and unused now),
+  mouse-following, 22k points. `#corner` is a link back to the fresh landing
+  (`index.html`), so visitors restart from the skull. The skull.bin request
+  hits the browser cache, so inner pages stay light.
 
 ---
 
@@ -711,16 +772,37 @@ It uses the *viewer's* local date. To display a different correlation, change
 `584283` in `longCount()`.
 
 Positioning: top-center on the fresh landing page; docks to the top-left
-(`body.overlay-open` or `body.page`) with the "?" button beside it. The "?"
-opens the `#why` modal — its text is the `WHY_TEXT` constant in `js/site.js`
-(recipe 1.7): edit once, changes everywhere.
+(`body.overlay-open` or `body.page`) with the "?" button beside it.
+
+**Vertical alignment (how it lines up with the menu / mini skull).** The date,
+the menu, and the top-right mini skull are all meant to share one horizontal
+band across the top. The trick is in the `.lc-wrap` rule in `css/site.css`: it
+is given `top: 1.3vmax` **and** `height: 52px` — the *same* top and height as
+the `.menu` and the mini-skull canvas — plus `display:flex; align-items:center`.
+That means the date text is vertically centered inside a 52px-tall box that
+starts at the same place as the others, so all three centers line up (the menu
+on desktop, the mini skull on mobile where the menu drops to the bottom). **To
+move the whole date+menu+skull band up or down**, change `top: 1.3vmax` on
+`.lc-wrap` (and, if you want them to keep matching, the matching `top` on
+`.menu` and on `canvas#mini` / `a#corner`). Raising the number lowers the band.
+The mobile size override is a second `.lc-wrap` rule inside
+`@media (max-width: 700px)` (font-size only — it keeps the same `top`).
+
+The "?" opens the `#why` modal — its text is the `WHY_TEXT` constant in
+`js/site.js` (recipe 1.7): edit once, changes everywhere. Links you put inside
+`WHY_TEXT` are styled by the `.why-card a` rule in site.css to match the rest
+of the site (body-ink, underlined, accent-red on hover) instead of the
+browser's default blue.
 
 ### 4.2 Chrome
 
 - **Menu** (`.menu`): same items as the old .music site + home + an Instagram
   icon (an inline SVG sized by `.menu svg`; the YouTube icon was removed — to
   add an icon back, copy the Instagram `<a>` block in any page's `nav.menu`
-  into all pages). Hidden on the landing page until entered. Colors:
+  into all pages). On the landing it rides with the overlay — shown while the
+  popover is open, hidden on the black scene, so it toggles on/off as the
+  corner skull switches between them (rule in index.html's `<style>`:
+  `.menu { display:none } body.overlay-open .menu { display:flex }`). Colors:
   `--color-deep` on black / `--ink` on red / white hover on red; on phones it
   moves to a bottom-right scrim. **Position** is the `.menu` rule in
   `css/site.css` (`top` / `right`; the `right` offset leaves room for the
@@ -737,7 +819,10 @@ opens the `#why` modal — its text is the `WHY_TEXT` constant in `js/site.js`
 - **Footer** (`.foot`): © line + alkabil.audio / Bio / My Work / Contact Me /
   Buy My Music, on every page including the overlay (there it's the "links"
   list).
-- **Why modal** (`#why`): black card, red border; closes on ×, backdrop click.
+- **Why modal** (`#why`): card colored by the theme (`--color-modal` background,
+  `--ink` text, `--color-main` border and × button — so it flips with light/dark);
+  links inside follow the site via `.why-card a` (§4.1). Closes on ×, backdrop
+  click, or Escape.
 
 ---
 
@@ -779,33 +864,71 @@ clears the fixed bottom-right menu.
 
 ## 6. Assets and tools
 
-- **`tools/obj2points.py`** — regenerate the skull from any OBJ:
-  `python tools/obj2points.py "Z:\TouchDesigner\Models\Coyote.obj" 160000`.
-  It reads vertices only, centers on the bounding box, normalizes the longest
-  axis to ±1, shuffles (seeded), quantizes to int16, appends a random int16
-  per point. After regenerating, also refresh the file:// fallback:
+**The point-cloud models (`assets/skull.bin`, `assets/heart.bin`)**
+
+- **`tools/obj2points.py`** — turns any OBJ into a point-cloud `.bin`. Usage is
+  `python tools/obj2points.py <model.obj> <point-count> <output-name>`:
+  - **arg 1** = the OBJ file to read (vertices only).
+  - **arg 2** = how many points to output (default `160000`). **The skull and
+    the heart must have the SAME count** or the morph can't pair them 1:1 —
+    both are `160000`. If a model has fewer vertices than this, the script
+    repeats random ones to pad up to the exact count.
+  - **arg 3** = the output filename in `assets/` (default `skull.bin`).
+
+  So the skull is `python tools/obj2points.py "Z:\TouchDesigner\Models\Coyote.obj" 160000 skull.bin`
+  and the heart is `python tools/obj2points.py "Z:\TouchDesigner\Claude\Heart Centered 2.obj" 160000 heart.bin`.
+  Under the hood it reads vertices only, centers on the bounding box,
+  normalizes the longest axis to ±1 (so **both models end up the same overall
+  size** — that's why the heart matches the skull's dimensions), shuffles with
+  a fixed seed (so "the first N points" is always a uniform subsample — how the
+  mini/preview skulls reuse the same file at fewer points), quantizes x/y/z to
+  int16, and appends one random int16 per point (its noise phase + brightness).
+
+- **The file:// fallbacks (`assets/skull.js`, `assets/heart.js`,
+  `assets/audio.js`)** — base64 twins of `skull.bin`, `heart.bin`, and
+  `loop.mp3`. The site fetches the `.bin`/`.mp3` normally; only if that fetch
+  fails (which happens when the page is opened straight from disk as a
+  `file://` URL, where fetch is blocked) does it fall back to loading the
+  matching `.js`. **Whenever you regenerate a `.bin` or swap the mp3, refresh
+  its twin** or the disk-opened version goes stale:
 
   ```
   python -c "import base64; open(r'assets/skull.js','w').write('window.SKULL_B64 = ' + repr(base64.b64encode(open(r'assets/skull.bin','rb').read()).decode()) + ';')"
+  python -c "import base64; open(r'assets/heart.js','w').write('window.HEART_B64 = ' + repr(base64.b64encode(open(r'assets/heart.bin','rb').read()).decode()) + ';')"
+  python -c "import base64; open(r'assets/audio.js','w').write('window.AUDIO_B64 = ' + repr(base64.b64encode(open(r'assets/loop.mp3','rb').read()).decode()) + ';')"
   ```
 
-- **`assets/skull.js` / `assets/audio.js`** — base64 twins of skull.bin and
-  loop.mp3. Only downloaded when fetch() fails (i.e., the site was opened from
-  disk). Safe to delete if you only ever use a server — but they're what makes
-  double-clicking index.html work.
-- **Fonts** — Academico (free for commercial use — it's the Dorico family, a
-  New Century Schoolbook revival) and Mallory (commercial, Frere-Jones —
-  check your webfont rights before going live), both converted from your
-  installed OTFs to woff2. Which one the site uses is the `--site-font`
-  switch, recipe 1.4.
-- **`assets/headshot.jpg`** — 900px, shown in full color at `min(58%, 980px)`
-  of the bio row (`.bio-photo` in site.css controls the size; add
+  They're only needed for the double-click-from-disk case; if you only ever
+  view the site over a server/Netlify you can ignore (or delete) them.
+
+**Other assets**
+
+- **`assets/favicon.png`** + **`tools/make-favicon.py`** — the browser-tab icon
+  is a rendering of the actual skull point cloud. Re-render it with
+  `python tools/make-favicon.py` (see §8.4).
+- **Fonts (`assets/fonts/`)** — Academico (free for commercial use — the Dorico
+  family, a New Century Schoolbook revival) and Mallory (commercial,
+  Frere-Jones — check your webfont rights before going live), four weights each
+  (regular, bold, and their italics), converted from your installed OTFs to
+  woff2. Which family the site uses is the `--site-font` switch (§1.4).
+- **`assets/teponaztli.svg`, `assets/winal.svg`** — glyph art (the teponaztli
+  is the audio button; the winal is spare, not currently wired in).
+- **`assets/headshot.jpg`** — shown in full color at `min(58%, 980px)` of the
+  bio row (`.bio-photo` in site.css controls the size; add
   `filter: grayscale(1);` there if you ever want it black &amp; white again).
 - **`assets/Voces-Fantasmas-Program-Notes.pdf`** — localized so it no longer
   depends on Squarespace.
 
-Total first-load weight over http: ≈ 2.9 MB (skull 1.2 + mp3 1.2 + fonts 0.12
-+ page/code). Inner pages after the front page: a few KB (everything's cached).
+**Scripts (`js/`)** — `site.js` (shared chrome: date, menu, footer, theme
+toggle, why-modal, copy-email — see §1.7), `theme-init.js` (the pre-paint theme
+default — §8.1), `skull-rot.js` (skull orientation — §1.5), `mini-skull.js`
+(the top-right corner skull on inner pages — §3.6). `index.html` has all the
+WebGL for the landing inline.
+
+Total first-load weight over http: ≈ **4.2 MB** — skull.bin 1.28 + heart.bin
+1.28 + loop.mp3 1.26 + fonts ~0.24 + headshot 0.21 + page/code. Drop
+`CFG.heart.enabled: false` to skip the heart download (~1.28 MB). Inner pages
+after the front page: a few KB (everything's cached).
 
 ---
 
@@ -1085,11 +1208,22 @@ render loop. Here's each, from easiest to most involved:
   `rotMix(ROT, skullRotMatrix([['x', 20], ['y', -15]]), morphT)` (degrees, same
   axis/notation as `SKULL_ROT` in `js/skull-rot.js`). Leave `spinSpeed` doing
   the continuous turn; this only sets the tilt it spins around.
-- **Corner-button size** — the bottom-right heart/skull button has one knob,
-  `--swap-size` on `#swapBtn` in the `index.html` `<style>` block (default
-  `clamp(64px, 7.5vmax, 110px)`, which matches the teponaztli's width). Change
-  that one value to resize it; its vertical alignment is the `bottom` on the
-  same rule.
+- **Corner-button size** — the bottom-right heart/skull button is a **square**,
+  and both its `width` and `height` read from one variable, `--swap-size` on
+  `#swapBtn` in the `index.html` `<style>` block. So **that single value is the
+  size** — change it and the whole button (and the model drawn in it) scales.
+  It's currently `clamp(96px, 11.25vmax, 165px)`, which is `clamp(MIN,
+  PREFERRED, MAX)`: never smaller than **96px** (tiny screens), normally
+  **11.25vmax** (11.25% of the larger screen side), never larger than **165px**
+  (big screens). To make it bigger/smaller, scale all three numbers together
+  (e.g. ×1.33 → `clamp(128px, 15vmax, 220px)`); to pin one fixed size instead,
+  just write a single value like `110px`.
+- **Corner-button vertical position** — the `bottom` on the same `#swapBtn`
+  rule (currently `calc(2.5vmax - 0.6em)`). `bottom` is the gap from the
+  bottom of the screen up to the button, so **a smaller number sits lower** and
+  a larger number sits higher. The mobile position is a separate `bottom` on
+  `#swapBtn` inside the `@media (max-width: 700px)` block (kept higher there so
+  it clears the bottom menu).
 
 The bottom-right preview **also morphs** when clicked, mirroring the big shape
 (it always shows what the *next* click produces), and it shares `spinSpeed`,
