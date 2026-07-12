@@ -569,8 +569,8 @@ Everything tunable sits in one object near the top of the main `<script>` in
 | `cam` | 2.6 | camera distance |
 | `lookAmt` | [1.15, 0.75] | radians of yaw/pitch at the screen edges (mouse-follow strength) |
 | `pointSize` | 1.9 | skull point size in px (× devicePixelRatio) |
-| `noiseExp` | [3.2, 0.55] | noise exponent at mouse far-left → far-right |
-| `noiseAmp` | [0.015, 0.30] | noise amplitude at mouse bottom → top |
+| `noiseExp` | [3.2, 0.55] | `[0]` = constant breathing exponent (used); `[1]` = old mouse-X target, now disabled |
+| `noiseAmp` | [0.008, 0.16] | `[0]` = constant breathing amplitude (used); `[1]` = old mouse-Y target, now disabled |
 | `audioPush` | 0.36 | how far points shoot outward at a full spectral hit |
 | `audioSens` | 1.35 | multiplier on the auto-gained band levels |
 | `fadeSec` | 2.4 | skull fade-in duration after entering |
@@ -612,9 +612,18 @@ p     = Ry(yaw) · Rx(pitch) · p                       look at the mouse
 
 then projects with a hand-rolled perspective (`w = cam − z`), sizes the point
 by 1/w, and the fragment shader draws a soft round sprite in `uCol`, additively
-blended (`ONE, ONE`) so dense regions glow. `exponent`/`amplitude` come from
-the mouse exactly like a TouchDesigner Noise TOP's Exponent/Amplitude
-parameters; `audio` is the band mix from 3.5.
+blended (`ONE, ONE`) so dense regions glow. `audio` is the band mix from 3.5.
+
+**The mouse no longer pushes the skull's particles outward.** `exponent` and
+`amplitude` are now held at constant values (`CFG.noiseExp[0]` /
+`CFG.noiseAmp[0]`), so the skull just "breathes" gently and stays put under the
+cursor — while still **turning to look at the mouse** (the `Ry(yaw)·Rx(pitch)`
+step, unchanged) and still **pulsing with the audio** (unchanged). Originally
+these were mouse-mapped like a TouchDesigner Noise TOP's Exponent/Amplitude
+(mouse X → exponent, mouse Y → amplitude). To bring that back, restore the two
+commented `uAmp`/`uExp` lines in the skull-draw block of the render loop in
+`index.html` (they sit directly under the constant versions); the second value
+in each `noiseExp`/`noiseAmp` array is the old mouse target those lines use.
 
 The "click the skull" target is `#skullHit`, an invisible 50vmin circle fixed
 at screen center (the skull rotates in place, so a fixed hitbox works).
@@ -1039,18 +1048,18 @@ render loop. Here's each, from easiest to most involved:
   **Center-proximity mapping (heart-only).** The beat responds to how close
   the mouse is to the **center of the screen**: near the middle the heart
   beats **faster and pulses bigger**, and it eases off toward the edges and
-  corners. This is intentionally *separate* from the skull — the skull's mouse
-  response (X = noise exponent, Y = noise amplitude) is a different code path
-  and is not touched by any of this. The mechanism is one line in the render
-  loop of `index.html` (search `centerProx`):
+  corners. This is intentionally *separate* from the skull — the skull no
+  longer has a mouse-driven particle push at all (§3.3), so nothing here
+  affects it. The mechanism is one line in the render loop of `index.html`
+  (search `centerProx`):
   ```js
-  const centerProx = Math.max(0, 1 - Math.hypot(sm.x - 0.5, sm.y - 0.5) / 0.6);
+  const centerProx = Math.max(0, 1 - Math.hypot(sm.x - 0.5, sm.y - 0.5) / CFG.heart.beatReach);
   ```
   `sm.x`/`sm.y` are the smoothed pointer in `0..1` screen coordinates, so
   `(sm.x-0.5, sm.y-0.5)` is the offset from center and `Math.hypot(...)` is the
-  distance to it. Dividing by **`0.6`** sets the reach (in screen-halves): at
-  the exact center `centerProx` is `1`, and it falls linearly to `0` at
-  `0.6` of the way to a corner — raise that number for a gentler, wider
+  distance to it. **`CFG.heart.beatReach`** (default `0.6`) sets the reach in
+  screen-halves: at the exact center `centerProx` is `1`, and it falls linearly
+  to `0` at `beatReach` of the way to a corner — raise it for a gentler, wider
   falloff, lower it to make only the dead-center count. `centerProx` then
   scales both the rate (`0.6 + 1.8 * centerProx` on the `beatPhase +=` line,
   so up to ~2.4× at center) and the push (`0.3 + 1.0 * centerProx` on the
