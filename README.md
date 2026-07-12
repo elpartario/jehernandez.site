@@ -51,7 +51,7 @@ the skull.
   [DOCUMENTATION.md §1.1](DOCUMENTATION.md) for the fallback + conversion
   one-liners.
 - Background attractor: `CFG.bg` in `index.html` — picks a random type from
-  `typePool` (`[0,1,3,4,6]`) each load by default; set `typeRandom: false` to pin
+  `typePool` (`[0,1,3,4, 6]`) each load by default; set `typeRandom: false` to pin
   a fixed `type` (0–6). Test any live with `?trig=N`; `enabled: false` turns
   the whole background off.
 - Heart surprise: `CFG.heart` in `index.html` — `enabled: false` reverts the
