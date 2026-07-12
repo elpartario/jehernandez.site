@@ -1407,7 +1407,7 @@ re-selecting never restarts it), and `selectTrack()` only crossfades gains;
     because it's anchored to the same measurements the teponaztli is built from.
     The single knob is the `--tnum-center` custom property on `#tracks`: it is
     the distance from the **bottom of the screen up to the center of the glyph**,
-    and **raising it moves the numerals up**, lowering it moves them down. Its
+    and **lowering the percentage moves the numerals up**, raising it moves them down. Its
     default is `calc(2.5vmax + 1.4rem + 0.334 * clamp(64px, 7.5vmax, 110px))`,
     which is, piece by piece: `2.5vmax` (the teponaztli's own gap from the
     bottom) `+ 1.4rem` (the height of the "(audio on/off)" caption that sits
