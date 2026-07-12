@@ -25,6 +25,11 @@ function longCount(d) {
 
 document.querySelectorAll('.lc-date').forEach(el => { el.textContent = longCount(); });
 
+/* auto-updating copyright year: any <span class="year"></span> is filled with
+   the current 4-digit year (e.g. 2026), so the © never needs manual editing.
+   (The footer builds its own year the same way, below.) */
+document.querySelectorAll('.year').forEach(el => { el.textContent = new Date().getFullYear(); });
+
 /* ============ MENU — EDIT ONCE, CHANGES ON EVERY PAGE ============
    [label, destination]. Destinations without "http" are pages of this site
    (BASE handles the work/ subfolder); full URLs open in a new tab. */
