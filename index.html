@@ -789,8 +789,6 @@ void main(){
 			t.gain.connect(analyser);         // analysis taps here (pre-master-mute)
 			t.gain.connect(outGain);
 			t.buf = null; t.timer = null; t.nextPass = 0; t.loading = null;
-			t.sources = [];      // in-flight buffer sources (so we can truly stop them)
-			t.stopTimer = null;  // pending deferred hard-stop after a crossfade
 		});
 	}
 
@@ -835,17 +833,7 @@ void main(){
 		fade.gain.linearRampToValueAtTime(0, tEnd);
 		src.start(t0);
 		src.stop(tEnd + 0.05);
-		t.sources.push(src);
-		src.onended = () => {
-			src.disconnect(); fade.disconnect();
-			const k = t.sources.indexOf(src); if (k >= 0) t.sources.splice(k, 1);
-		};
-	}
-	// hard-stop every in-flight source of a track (not just gain-mute it) so a
-	// long buffer can't linger and get un-muted again when the track is reselected
-	function killSources(t){
-		t.sources.forEach(s => { try { s.stop(); } catch (e) {} try { s.disconnect(); } catch (e) {} });
-		t.sources = [];
+		src.onended = () => { src.disconnect(); fade.disconnect(); };
 	}
 	function scheduleTrack(t){
 		if (!t.buf || !actx) return;
@@ -854,45 +842,40 @@ void main(){
 			t.nextPass += t.buf.duration - CFG.audioFade;
 		}
 	}
+	/* Each track's loop starts the FIRST time that track is selected (from the top
+	   of the file) and then runs CONTINUOUSLY — it is never stopped or restarted.
+	   So after its first play a track is always at the position "as if it had kept
+	   playing"; switching is purely a gain crossfade (selectTrack); and two copies
+	   of a track can never overlap. (Track 1 is auto-selected on the first
+	   teponaztli press, so it's the first to start from the top.) */
 	function startTrackLoop(t){
-		if (t.stopTimer){ clearTimeout(t.stopTimer); t.stopTimer = null; }  // cancel a pending hard-stop
-		if (t.timer) return;        // scheduler already running — reuse it (its sources are the live loop)
-		killSources(t);             // clear any leftovers from a fully-stopped past life
-		t.nextPass = actx.currentTime + 0.03;
+		if (t.timer || !t.buf || !actx) return;   // one scheduler per track, for good
+		t.nextPass = actx.currentTime + 0.03;     // first pass plays from buffer offset 0
 		scheduleTrack(t);
 		t.timer = setInterval(() => scheduleTrack(t), 250);
 	}
-	function stopTrackLoop(t){      // immediate, complete stop
-		if (t.timer){ clearInterval(t.timer); t.timer = null; }
-		if (t.stopTimer){ clearTimeout(t.stopTimer); t.stopTimer = null; }
-		killSources(t);
-	}
 
-	/* crossfade to track i (loads it first if needed). */
+	/* make track i the only audible one (loading + starting it if needed). Ramps
+	   every track's gain toward its target — 1 for the selected, 0 for the rest —
+	   so any order of clicks resolves cleanly; the selected track keeps playing
+	   from wherever its continuous loop currently is. */
 	function selectTrack(i){
 		ensureCtx();
 		if (actx.state === 'suspended') actx.resume();
-		const prev = TRACKS[activeTrack], next = TRACKS[i];
 		activeTrack = i;
 		updateNumerals();
-		const run = () => {
-			startTrackLoop(next);
+		const apply = () => {
+			startTrackLoop(TRACKS[i]);          // ensure it's running (no-op if it already is)
 			const now = actx.currentTime;
-			next.gain.gain.cancelScheduledValues(now);
-			next.gain.gain.setValueAtTime(next.gain.gain.value, now);
-			next.gain.gain.linearRampToValueAtTime(1, now + CFG.audioFade);
-			if (prev !== next){
-				prev.gain.gain.cancelScheduledValues(now);
-				prev.gain.gain.setValueAtTime(prev.gain.gain.value, now);
-				prev.gain.gain.linearRampToValueAtTime(0, now + CFG.audioFade);
-				// after the crossfade completes, hard-stop prev's sources (tracked
-				// on prev.stopTimer so reselecting prev mid-fade cancels the kill)
-				if (prev.stopTimer) clearTimeout(prev.stopTimer);
-				prev.stopTimer = setTimeout(() => { prev.stopTimer = null; stopTrackLoop(prev); },
-					CFG.audioFade * 1000 + 250);
-			}
+			TRACKS.forEach((t, k) => {
+				if (!t.gain) return;
+				const target = k === i ? 1 : 0;
+				t.gain.gain.cancelScheduledValues(now);
+				t.gain.gain.setValueAtTime(t.gain.gain.value, now);
+				t.gain.gain.linearRampToValueAtTime(target, now + CFG.audioFade);
+			});
 		};
-		next.buf ? run() : loadTrack(i).then(run).catch(e => console.error('[site] track', i, e));
+		TRACKS[i].buf ? apply() : loadTrack(i).then(apply).catch(e => console.error('[site] track', i, e));
 	}
 	function startSource(){
 		if (audioStarted || !TRACKS[activeTrack].buf || !actx) return;
@@ -906,8 +889,10 @@ void main(){
 		wantPlay = true;
 		ensureCtx();
 		if (actx.state === 'suspended') actx.resume();
-		startSource();
-		loadTrack(1); loadTrack(2);   // preload the other two so switching is instant
+		startSource();                // starts track 1's loop from the top of the file
+		loadTrack(1); loadTrack(2);   // preload the other two (buffers only). Each one's
+		                              // loop begins from the top the FIRST time it's
+		                              // selected, then keeps running (resumes mid-track)
 	}
 	// decode track 1 right away (context may sit suspended until a gesture)
 	ensureCtx();
