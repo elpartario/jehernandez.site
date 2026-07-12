@@ -98,9 +98,9 @@ themeT.addEventListener('click', () => {
 const WHY_TEXT = `
 	<p><strong>What is this?</strong></p>
 	<p>These digits are the represntation of the Maya Long Count calendar. Its 
-	five positions — <em>b’ak’tun</em>, <em>k’atun</em>, </em>tun</em>, <em>winal</em>, and 
-	<em>k’in</em>, each correspond to a count of days. A k’in is one day; a winal is 20 days; 
-	a tun is 360 days; a k’atun is 7,200 days; and a b’ak’tun is 144,000 days. Read from left 
+	five positions — <em>b’ak’tun</em>, <em>k’atun</em>, <em>tun</em>, <em>winal</em>, and 
+	<em>k’in</em>, each correspond to a count of days. A <em>k’in</em> is one day; a <em>winal</em> is 20 days; 
+	a <em>tun</em> is 360 days; a <em>k’atun</em> is 7,200 days; and a <em>b’ak’tun</em> is 144,000 days. Read from left 
 	to right, the date counts larger and smaller temporal units, moving from hundreds of 
 	thousands down to the single day.</p>
 	<p>This locates this site within another way of understanding our place in time. This 
