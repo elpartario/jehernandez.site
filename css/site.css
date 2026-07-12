@@ -152,7 +152,10 @@ body.page .lc-wrap {
 }
 body.overlay-open .why-btn,
 body.page .why-btn { display: inline-flex; align-items: center; justify-content: center; }
-.why-btn:hover { background: rgba(128, 128, 128, 0.25); }
+/* both "?" buttons (date + Cuicatl) turn the accent color on hover, the same
+   as links (.sheet a:hover / .why-card a:hover) — the ? glyph and its circle
+   border both use currentColor, so setting color recolors the whole button */
+.why-btn:hover { color: var(--color-main); }
 
 .menu {
 	position: fixed;
