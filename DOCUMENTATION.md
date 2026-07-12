@@ -49,7 +49,9 @@ The [README](README.md) is the short version; this is the complete one.
 The track is `assets/loop.mp3`. To swap it:
 
 1. Replace `assets/loop.mp3` with any MP3, **keeping the same filename**. Done —
-   no code changes. It loops automatically.
+   no code changes. It loops automatically, and the loop **crossfades** (~0.5s)
+   so the track doesn't need to be seam-perfect — an ordinary clip loops without
+   a hard click (see [8.3](#83-the-audio-loop-crossfade) to tune the fade).
 2. If your source is an AIF/WAV, convert with TouchDesigner's bundled ffmpeg
    (no installs needed):
 
@@ -704,13 +706,19 @@ at screen center (the skull rotates in place, so a fixed hitbox works).
 
 ### 3.4 The strangeTrig background
 
-A faithful port of the `strangeTrig.tox` compute shader (attractor type 0).
-Each of the 55,000 particles:
+A faithful port of the `strangeTrig.tox` compute shader — **all seven
+attractor types (0–6)** from the TD component, chosen per load by the
+randomizer or pinned with `CFG.bg.type` (see [1.6](#16-the-strangetrig-background-onoff-and-picking-an-attractor)).
+The type is baked into the shader at compile time by a `#define ATTR_TYPE N`
+prefix, so only the selected formula is active. Each of the 55,000 particles:
 
 1. seeds itself in a scattered disc from its id (`hash(id)`),
-2. iterates `x' = sin(x² − y² + A + φ)`, `y' = cos(C·x·y + B + φ)` up to 9
-   times — but each particle group stops at a different depth (`grp =
-   id mod 9`), which is what layers the structure exactly like the TD original,
+2. iterates its attractor formula up to 9 times — but each particle group stops
+   at a different depth (`grp = id mod 9`), which is what layers the structure
+   exactly like the TD original. (Type 0, for example, is
+   `x' = sin(x² − y² + A + φ)`, `y' = cos(C·x·y + B + φ)`; types 4–6 also use a
+   `D` parameter. The full set lives in the `#if ATTR_TYPE` block of the `vs-bg`
+   shader in index.html.)
 3. is drawn as a dim red additive point **into a half-resolution buffer**,
    which is then upscaled to the screen through a 5-tap blur (`fs-blit`) —
    that's the soft look. `bg.blurDiv`/`bg.blurPx` control it (see table).
@@ -718,17 +726,25 @@ Each of the 55,000 particles:
 Mouse x bends parameter **A**, mouse y bends **B** around the TD component's
 defaults; the music adds a wobble on **B** and speeds up the slow phase drift
 (`bg.audioWobble`). The output is intentionally **stretched to the viewport**
-(no aspect correction) so it always fills the page.
+(no aspect correction) so it always fills the page. The dim-red point color is
+in the `fs-bg` fragment shader (§1.3).
 
 ### 3.5 Audio pipeline
 
-There is no `<audio>` element. The MP3 is fetched, decoded once into memory,
-and played as a looping `AudioBufferSourceNode`:
+There is no `<audio>` element. The MP3 is fetched and decoded once into memory,
+then looped by a small scheduler: each pass of the file is its own short-lived
+`AudioBufferSourceNode` that fades in as the previous one fades out, so the
+loop has no hard seam (detail in [8.3](#83-the-audio-loop-crossfade)). Every
+pass mixes into one shared bus:
 
 ```
-BufferSource ──► AnalyserNode (fftSize 256)     ← reactivity reads here
-      └────────► GainNode ──► speakers          ← mute happens here
+BufferSource(pass N)  ┐
+BufferSource(pass N+1)─┼─► loopBus ──► AnalyserNode (fftSize 256)  ← reactivity reads here
+   … (crossfaded)      ┘        └─────► GainNode ──► speakers        ← mute happens here
 ```
+
+Analysis taps `loopBus` (before the mute gain), so the skull keeps reacting to
+the waveform even when muted-then-unmuted mid-beat.
 
 Playback starts **only from the teponaztli**: the first press starts the
 music (captions swap between "(turn audio on)" and "(turn audio off)", and
@@ -819,8 +835,9 @@ browser's default blue.
   popover is open, hidden on the black scene, so it toggles on/off as the
   corner skull switches between them (rule in index.html's `<style>`:
   `.menu { display:none } body.overlay-open .menu { display:flex }`). Colors:
-  `--color-deep` on black / `--ink` on red / white hover on red; on phones it
-  moves to a bottom-right scrim. **Position** is the `.menu` rule in
+  `--color-deep` at rest on the black landing, `--ink` on the overlay/inner
+  pages, `--color-main` on hover; on phones it moves to a bottom-right dark
+  scrim with fixed light (`#f0f0f0`) links. **Position** is the `.menu` rule in
   `css/site.css` (`top` / `right`; the `right` offset leaves room for the
   corner skull). It sits pixel-identical on every page because the window
   scrollbar is hidden on `<html>` (the `html, body` rule at the top of
@@ -847,7 +864,7 @@ browser's default blue.
 Every inner page is the same skeleton — copy any of them:
 
 ```html
-<body class="page">                    ← gives the red background + ink text
+<body class="page">                    ← themed background (--color-page) + ink text
   lc-wrap (date + ?)                   ← date injected by js/site.js
   nav.menu                             ← identical on all pages
   canvas#mini + a#corner               ← corner skull, links home
@@ -979,7 +996,11 @@ after the front page: a few KB (everything's cached).
   error message names the block (`vs-skull`, `fs-bg`, …) and the bad line.
 - **Performance on weak machines** — lower `bg.count` (55000 → 20000) and
   `CFG.mini.count`, raise `bg.blurDiv` back to 4, and/or drop skull points by
-  regenerating skull.bin at 80000.
+  regenerating skull.bin at a lower count. **If you change the skull's point
+  count, regenerate heart.bin at the exact same count** — the morph pairs them
+  1:1 and needs matching totals (§8.7). The cheapest single win is
+  `CFG.heart.enabled: false`, which skips the heart's points and download
+  entirely.
 
 ---
 
@@ -995,11 +1016,13 @@ after the front page: a few KB (everything's cached).
   `var THEME_DEFAULT = 'dark';` at the top of `js/theme-init.js`. Set it to
   `'dark'` or `'light'`. That's the whole switch; it applies site-wide to
   anyone who hasn't used the toggle yet. (Currently `'dark'`.)
-- **The toggle**: sun/moon button, injected by `js/site.js` on every page,
-  lower-left. On inner pages it's always there; on the landing it exists
-  **only while the overlay is open** (next to the teponaztli) and disappears
-  when you return to the black scene. The icon shows the theme you'd switch
-  *to* (moon = go dark, sun = go light).
+- **The toggle**: sun/moon button, injected by `js/site.js` on every page, in
+  the **bottom-left corner** (same spot on every page). On inner pages it's
+  always there; on the landing it exists **only while the overlay is open** and
+  disappears when you return to the black scene (the teponaztli occupies that
+  same corner underneath, but it's hidden behind the overlay then, so they
+  don't clash). The icon shows the theme you'd switch *to* (moon = go dark,
+  sun = go light).
 - **Persistence & how the default is applied**: `js/theme-init.js` runs in
   every page's `<head>`, **before first paint** (so there's no flash), and
   decides the theme: it uses the visitor's saved choice from `localStorage`
@@ -1081,7 +1104,7 @@ untouched (the whole audio clock suspends and resumes).
 
 `assets/favicon.png` is a real render of the point cloud (front view, site
 red, transparent background). To regenerate — after swapping the model, or
-re-orienting the skull, or changing the red — run from the site root:
+re-orienting the skull, or changing the favicon color — run from the site root:
 
 ```
 python tools/make-favicon.py
