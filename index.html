@@ -97,8 +97,11 @@
 		50% { transform: translateX(-50%) translateY(9px); }
 	}
 
-	/* menu appears only once the skull has been clicked */
-	body:not(.entered) .menu { display: none; }
+	/* on the landing the menu rides with the overlay: shown while the site
+	   (popover) is open, hidden on the black scene — so it toggles on/off as
+	   the corner skull switches between them */
+	.menu { display: none; }
+	body.overlay-open .menu { display: flex; }
 
 	/* corner: transparent click zone over the mini skull (post-enter) */
 	#corner {
@@ -191,10 +194,15 @@
 	#swapBtn {
 		position: fixed;
 		right: 2.5vmax;
-		bottom: 2.5vmax;
+		/* lifted so its center lines up with the teponaztli's glyph (which sits
+		   above its caption on the other side) */
+		bottom: calc(2.5vmax + 0.5em);
 		z-index: 15;
-		width: clamp(56px, 6.5vmax, 96px);
-		height: clamp(56px, 6.5vmax, 96px);
+		/* --swap-size: the ONE knob to resize the heart/skull button.
+		   Default matches the teponaztli's width. */
+		--swap-size: clamp(64px, 7.5vmax, 110px);
+		width: var(--swap-size);
+		height: var(--swap-size);
 		background: none;
 		border: none;
 		padding: 0;
@@ -207,7 +215,7 @@
 	#swapBtn canvas { width: 100%; height: 100%; display: block; }
 	@media (max-width: 700px) {
 		/* clear the bottom-right menu scrim on phones */
-		#swapBtn { bottom: calc(2vmax + 4.2em); }
+		#swapBtn { bottom: calc(2.5vmax + 3em); }
 	}
 
 	/* light/dark toggle: same bottom-left corner as every other page (the
@@ -330,7 +338,7 @@
 	<script id="vs-skull" type="x-shader/x-vertex">
 attribute vec4 aP;
 attribute vec4 aH;   // morph target (the heart) — pairs with aP point-for-point
-uniform float uTime, uFade, uAmp, uExp, uAudio, uPt, uScale, uAsp, uFocal, uCam, uMorph;
+uniform float uTime, uFade, uAmp, uExp, uAudio, uPt, uScale, uAsp, uFocal, uCam, uMorph, uBeat;
 uniform vec2 uLook;
 uniform mat3 uRot;
 varying float vB;
@@ -346,7 +354,8 @@ void main(){
 	// shaped by exponent (mouse x) and amplitude (mouse y),
 	// plus the audio push straight out from the skull's center
 	float n = 0.5 + 0.5 * sin(uTime * (0.4 + 1.3 * r) + r * 151.0);
-	float disp = pow(n, uExp) * uAmp + uAudio * (0.35 + 0.65 * fract(r * 7.31));
+	float disp = pow(n, uExp) * uAmp + uAudio * (0.35 + 0.65 * fract(r * 7.31))
+		+ uBeat * (0.45 + 0.75 * fract(r * 3.7));   // heartbeat: radial particle pulse
 	p += normalize(p + vec3(1e-4)) * disp;
 
 	p = uRot * p;                        // orient the scan (js/skull-rot.js)
@@ -472,8 +481,8 @@ void main(){
 		         appearAfter: 5,         // seconds after the hints clear (first load)
 		         appearAfterReturn: 3,   // seconds after coming back from the popover
 		         morphSpeed: 0.035,      // easing toward the other shape (higher = faster morph)
-		         beatAmp: 0.085,         // how much the heart swells as the mouse nears the center
-		         beatRate: 1.15,         // heartbeats per second
+		         beatAmp: 0.14,          // max particle push at a beat peak (mouse Y higher = stronger)
+		         beatRate: 1.15,         // base beats/s (mouse X right = up to ~2.4x faster)
 		         spinSpeed: 0.25 },      // heart rotation in radians/s (absTime-style)
 		bg: { enabled: true,             // set false to turn the background off entirely
 		      type: 0,                   // strangeTrig attractor type: 0..6 (used when typeRandom is false)
@@ -879,6 +888,8 @@ void main(){
 	   The whole feature is gated by CFG.heart.enabled. */
 	let morphT = 0, morphTarget = 0;      // 0 = skull, 1 = heart (eased every frame)
 	let swapTimer = null, wantSwap = false;
+	let spinA = 0, pspinA = 0, beatPhase = 0, beatPush = 0;  // heart spin angles, beat clock, current push
+	const wrapPi = a => ((a % 6.2831853) + 9.424778) % 6.2831853 - 3.1415927;
 	function rotMix(a, b, t){
 		const r = new Array(9);
 		for (let i = 0; i < 9; i++) r[i] = a[i] + (b[i] - a[i]) * t;
@@ -896,6 +907,7 @@ void main(){
 	document.getElementById('swapBtn').addEventListener('click', e => {
 		e.stopPropagation();
 		morphTarget = 1 - morphTarget;
+		spinA = wrapPi(spinA); pspinA = wrapPi(pspinA);  // avoid unwinding minutes of spin on morph
 	});
 
 	// deep link from the inner pages' corner skulls: open straight onto the red page
@@ -935,11 +947,16 @@ void main(){
 			morphT += (morphTarget - morphT) * CFG.heart.morphSpeed;
 			if (morphT < 0.0005) morphT = 0; else if (morphT > 0.9995) morphT = 1;
 			if (wantSwap && heartN){ document.body.classList.add('swap-ready'); wantSwap = false; }
-			// the heart beats as the mouse nears the clickable center circle
-			const prox = Math.max(0, 1 - Math.hypot((sm.x - 0.5) * innerWidth, (sm.y - 0.5) * innerHeight)
-				/ (Math.min(innerWidth, innerHeight) * 0.25));
-			const thump = Math.pow(Math.max(0, Math.sin(simT * CFG.heart.beatRate * 6.2831853)), 3);
-			const beat = 1 + CFG.heart.beatAmp * prox * thump * morphT;
+			// heart beat = a radial particle pulse. It quickens AND grows as the
+			// mouse nears the CENTER of the screen (heart-only; the skull's X/Y
+			// noise mapping is separate and untouched). centerProx: 1 at center,
+			// easing to 0 toward the corners (0.6 = the reach, in screen halves).
+			const centerProx = Math.max(0, 1 - Math.hypot(sm.x - 0.5, sm.y - 0.5) / 0.6);
+			beatPhase += dt * CFG.heart.beatRate * (0.6 + 1.8 * centerProx) * 6.2831853;
+			const thump = Math.pow(Math.max(0, Math.sin(beatPhase)), 3);
+			beatPush = CFG.heart.beatAmp * (0.3 + 1.0 * centerProx) * thump;
+			if (morphT > 0.001) spinA += dt * CFG.heart.spinSpeed;
+			if (morphT < 0.999) pspinA += dt * CFG.heart.spinSpeed;
 
 			const bgFade = Math.min(1, (now - bootT) / 2000);
 			const skullFade = skullT0 === null ? 0 :
@@ -1005,17 +1022,18 @@ void main(){
 				}
 				gl.uniform1f(U(skullP, 'uTime'), simT);
 				gl.uniform1f(U(skullP, 'uFade'), skullFade);
-				gl.uniform1f(U(skullP, 'uAmp'), CFG.noiseAmp[0] + (1 - sm.y) * (CFG.noiseAmp[1] - CFG.noiseAmp[0]));
+				gl.uniform1f(U(skullP, 'uAmp'), CFG.noiseAmp[0] + (1 - sm.y) * (CFG.noiseAmp[1] - CFG.noiseAmp[0]) * (1 - morphT));
 				gl.uniform1f(U(skullP, 'uExp'), CFG.noiseExp[0] + sm.x * (CFG.noiseExp[1] - CFG.noiseExp[0]));
 				gl.uniform1f(U(skullP, 'uAudio'), push);
 				gl.uniform1f(U(skullP, 'uPt'), CFG.pointSize * dpr);
-				gl.uniform1f(U(skullP, 'uScale'), CFG.scale * fit * beat);
+				gl.uniform1f(U(skullP, 'uScale'), CFG.scale * fit);
+				gl.uniform1f(U(skullP, 'uBeat'), beatPush * morphT);
 				gl.uniform1f(U(skullP, 'uAsp'), asp);
 				gl.uniform1f(U(skullP, 'uFocal'), CFG.focal);
 				gl.uniform1f(U(skullP, 'uCam'), CFG.cam);
 				// skull follows the mouse; the heart ignores it and spins with time
 				gl.uniform2f(U(skullP, 'uLook'),
-					(sm.x - 0.5) * CFG.lookAmt[0] * (1 - morphT) + simT * CFG.heart.spinSpeed * morphT,
+					(sm.x - 0.5) * CFG.lookAmt[0] * (1 - morphT) + spinA * morphT,
 					(sm.y - 0.5) * CFG.lookAmt[1] * (1 - morphT));
 				// the scan-correction rotation fades out as the heart takes over
 				gl.uniformMatrix3fv(U(skullP, 'uRot'), false, rotMix(ROT, IDENT, morphT));
@@ -1061,29 +1079,35 @@ void main(){
 		//    the heart spins with time, the skull follows the mouse
 		if (running && sgl && swapSkullBuf && swapHeartBuf &&
 		    document.body.classList.contains('swap-ready')){
-			const showHeart = morphTarget === 0;
+			// the preview shows — and live-morphs into — whatever a click makes
+			// next: the inverse of the big shape (heart-ness pv = 1 - morphT)
+			const pv = 1 - morphT;
 			sgl.viewport(0, 0, swapCanvas.width, swapCanvas.height);
 			sgl.clearColor(0, 0, 0, 0);
 			sgl.clear(sgl.COLOR_BUFFER_BIT);
 			sgl.useProgram(swapP);
-			sgl.bindBuffer(sgl.ARRAY_BUFFER, showHeart ? swapHeartBuf : swapSkullBuf);
+			sgl.bindBuffer(sgl.ARRAY_BUFFER, swapSkullBuf);   // aP = skull
 			sgl.enableVertexAttribArray(0);
 			sgl.vertexAttribPointer(0, 4, sgl.SHORT, true, 8, 0);
+			sgl.bindBuffer(sgl.ARRAY_BUFFER, swapHeartBuf);   // aH = heart
+			sgl.enableVertexAttribArray(1);
+			sgl.vertexAttribPointer(1, 4, sgl.SHORT, true, 8, 0);
 			sgl.uniform1f(SU('uTime'), simT);
 			sgl.uniform1f(SU('uFade'), 1.0);
-			sgl.uniform1f(SU('uAmp'), 0.04);
+			sgl.uniform1f(SU('uAmp'), 0.04 * morphT);
 			sgl.uniform1f(SU('uExp'), 1.2);
 			sgl.uniform1f(SU('uAudio'), push * 0.4);
+			sgl.uniform1f(SU('uBeat'), beatPush * pv);
 			sgl.uniform1f(SU('uPt'), 2.2);
 			sgl.uniform1f(SU('uScale'), 0.8);
 			sgl.uniform1f(SU('uAsp'), 1.0);
 			sgl.uniform1f(SU('uFocal'), CFG.focal);
 			sgl.uniform1f(SU('uCam'), CFG.cam);
-			sgl.uniform1f(SU('uMorph'), 0.0);
+			sgl.uniform1f(SU('uMorph'), pv);
 			sgl.uniform2f(SU('uLook'),
-				showHeart ? simT * CFG.heart.spinSpeed : (msm.x - 0.5) * CFG.lookAmt[0],
-				showHeart ? 0.0 : (msm.y - 0.5) * CFG.lookAmt[1]);
-			sgl.uniformMatrix3fv(SU('uRot'), false, showHeart ? IDENT : ROT);
+				(msm.x - 0.5) * CFG.lookAmt[0] * morphT + pspinA * pv,
+				(msm.y - 0.5) * CFG.lookAmt[1] * morphT);
+			sgl.uniformMatrix3fv(SU('uRot'), false, rotMix(ROT, IDENT, pv));
 			sgl.uniform3f(SU('uCol'), 1.0, 0.055, 0.075);
 			sgl.enable(sgl.BLEND);
 			sgl.blendFunc(sgl.ONE, sgl.ONE);
