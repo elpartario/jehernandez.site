@@ -98,9 +98,9 @@ themeT.addEventListener('click', () => {
 const WHY_TEXT = `
 	<p><strong>What is this?</strong></p>
 	<p>These digits are the represntation of the Maya Long Count calendar. Its 
-	five positions — <em>b’ak’tun</em>, <em>k’atun</em>, <em>tun</em>, <em>winal</em>, and 
-	<em>k’in</em>, each correspond to a count of days. A <em>k’in</em> is one day; a <em>winal</em> is 20 days; 
-	a <em>tun</em> is 360 days; a <em>k’atun</em> is 7,200 days; and a <em>b’ak’tun</em> is 144,000 days. Read from left 
+	five positions — <em>b’ak’tun</em>, <em>k’atun</em>, </em>tun</em>, <em>winal</em>, and 
+	<em>k’in</em>, each correspond to a count of days. A k’in is one day; a winal is 20 days; 
+	a tun is 360 days; a k’atun is 7,200 days; and a b’ak’tun is 144,000 days. Read from left 
 	to right, the date counts larger and smaller temporal units, moving from hundreds of 
 	thousands down to the single day.</p>
 	<p>This locates this site within another way of understanding our place in time. This 
@@ -109,18 +109,46 @@ const WHY_TEXT = `
 	calendrical tracking on these lands now known as the Americas. Timekeeping is not neutral: 
 	it invites us into longer genealogies that precede colonial naming, persist beyond it, and 
 	continue to shape how these lands are understood.</p>
-	<p>For more info, <a href="https://www.penn.museum/sites/expedition/maya-calendars/" target="_blank" rel="noopener">click here</a>.</p>
+	<p>For more info, <a href="https://www.penn.museum/sites/expedition/maya-long-count-numbers/?utm_source=chatgpt.com" target="_blank" rel="noopener">click here</a>.</p>
 `;
 
-const whyBtn = document.getElementById('whyBtn');
-const why = document.getElementById('why');
-if (whyBtn && why) {
-	const card = why.querySelector('.why-card');
-	card.innerHTML = '<button class="why-close" aria-label="Close">×</button>' + WHY_TEXT;
-	whyBtn.addEventListener('click', () => why.classList.add('open'));
-	card.querySelector('.why-close').addEventListener('click', () => why.classList.remove('open'));
-	why.addEventListener('click', e => { if (e.target === why) why.classList.remove('open'); });
+/* ============ "CUICATL" EXPLAINER — EDIT THIS TEXT HERE, ONCE ============
+   Fills the "?" modal beside "Cuicatl" on the full-works page. It's its own
+   independent HTML string (a copy of the date text for now) — edit it freely
+   without touching WHY_TEXT above; the two are separate. Styling is inherited
+   from the shared .why-modal / .why-card classes, so you only edit words. */
+const CUICATL_TEXT = `
+	<p><strong>What is Cuicatl?</strong></p>
+	<p>These digits are the represntation of the Maya Long Count calendar. Its
+	five positions — <em>b’ak’tun</em>, <em>k’atun</em>, <em>tun</em>, <em>winal</em>, and
+	<em>k’in</em>, each correspond to a count of days. A k’in is one day; a winal is 20 days;
+	a tun is 360 days; a k’atun is 7,200 days; and a b’ak’tun is 144,000 days. Read from left
+	to right, the date counts larger and smaller temporal units, moving from hundreds of
+	thousands down to the single day.</p>
+	<p>This locates this site within another way of understanding our place in time. This
+	system, along with other Originary timekeeping practices, emerged from the lands in
+	which I was born. Placing it here reiterates these systems as legitimate forms of
+	calendrical tracking on these lands now known as the Americas. Timekeeping is not neutral:
+	it invites us into longer genealogies that precede colonial naming, persist beyond it, and
+	continue to shape how these lands are understood.</p>
+	<p>For more info, <a href="https://www.penn.museum/sites/expedition/maya-long-count-numbers/?utm_source=chatgpt.com" target="_blank" rel="noopener">click here</a>.</p>
+`;
+
+/* Wire a "?" button to its modal. Both are empty shells in the HTML: a
+   <button class="why-btn" id="..."> and a <div class="why-modal" id="...">
+   containing an empty <div class="why-card">. To add another explainer
+   anywhere, drop those two shells in a page and add one wireModal() line. */
+function wireModal(btnId, modalId, html) {
+	const btn = document.getElementById(btnId), modal = document.getElementById(modalId);
+	if (!btn || !modal) return;
+	const card = modal.querySelector('.why-card');
+	card.innerHTML = '<button class="why-close" aria-label="Close">×</button>' + html;
+	btn.addEventListener('click', () => modal.classList.add('open'));
+	card.querySelector('.why-close').addEventListener('click', () => modal.classList.remove('open'));
+	modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
 }
+wireModal('whyBtn', 'why', WHY_TEXT);
+wireModal('cuicatlBtn', 'cuicatlModal', CUICATL_TEXT);
 
 /* copy-to-clipboard: navigator.clipboard only exists in a "secure context"
    (https, localhost, or file://). Served to a plain http:// LAN address it's
