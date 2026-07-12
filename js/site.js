@@ -109,7 +109,7 @@ const WHY_TEXT = `
 	calendrical tracking on these lands now known as the Americas. Timekeeping is not neutral: 
 	it invites us into longer genealogies that precede colonial naming, persist beyond it, and 
 	continue to shape how these lands are understood.</p>
-	<p>For more info, <a href="https://www.penn.museum/sites/expedition/maya-long-count-numbers/?utm_source=chatgpt.com" target="_blank" rel="noopener">click here</a>.</p>
+	<p>For more info, <a href="https://www.penn.museum/sites/expedition/maya-calendars" target="_blank" rel="noopener">click here</a>.</p>
 `;
 
 /* ============ "CUICATL" EXPLAINER — EDIT THIS TEXT HERE, ONCE ============
@@ -119,19 +119,12 @@ const WHY_TEXT = `
    from the shared .why-modal / .why-card classes, so you only edit words. */
 const CUICATL_TEXT = `
 	<p><strong>What is Cuicatl?</strong></p>
-	<p>These digits are the represntation of the Maya Long Count calendar. Its
-	five positions — <em>b’ak’tun</em>, <em>k’atun</em>, <em>tun</em>, <em>winal</em>, and
-	<em>k’in</em>, each correspond to a count of days. A k’in is one day; a winal is 20 days;
-	a tun is 360 days; a k’atun is 7,200 days; and a b’ak’tun is 144,000 days. Read from left
-	to right, the date counts larger and smaller temporal units, moving from hundreds of
-	thousands down to the single day.</p>
-	<p>This locates this site within another way of understanding our place in time. This
-	system, along with other Originary timekeeping practices, emerged from the lands in
-	which I was born. Placing it here reiterates these systems as legitimate forms of
-	calendrical tracking on these lands now known as the Americas. Timekeeping is not neutral:
-	it invites us into longer genealogies that precede colonial naming, persist beyond it, and
-	continue to shape how these lands are understood.</p>
-	<p>For more info, <a href="https://www.penn.museum/sites/expedition/maya-long-count-numbers/?utm_source=chatgpt.com" target="_blank" rel="noopener">click here</a>.</p>
+	<p><em>Cuicatl</em> is a Nahuatl word commonly translated as song, singing, or music. 
+	In historical Nahua sources, it names a broad field where voice, poetry, rhythm, dance, 
+	and memory meet. The phrase <em>in xōchitl in cuīcatl</em> — “flower and song” — is often 
+	used to describe poetry or art. Contemporary works such as Gabriel Pareyón’s <em>Xochicuicatl 
+	cuecuechtli</em> and <em>Chicueyi Cuicatl</em> continue to study and dialogue with this longer 
+	expressive history.</p>
 `;
 
 /* Wire a "?" button to its modal. Both are empty shells in the HTML: a
