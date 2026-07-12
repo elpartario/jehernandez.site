@@ -1,0 +1,86 @@
+PROPRIETARY LICENSE — SOURCE-AVAILABLE, STUDY ONLY
+
+Copyright (c) 2026 J.E. Hernández. All rights reserved.
+
+This repository is made publicly readable ("source-available") solely so that
+others may study how it works. It is NOT open source. No right to use, copy,
+deploy, or distribute this work is granted except as expressly stated below.
+
+
+1. DEFINITIONS
+
+   "The Work" means everything in this repository: the source code (HTML, CSS,
+   JavaScript, shaders), the build/asset scripts, the documentation, and the
+   creative content (text, images, audio, 3-D scans/point-cloud data, and
+   glyph artwork), excluding the Third-Party Components described in Section 5.
+
+   "You" means any person or entity accessing the Work.
+
+   "Study" means viewing, reading, and running the Work locally on your own
+   device for the sole purpose of personal, non-commercial learning and
+   evaluation.
+
+
+2. PERMITTED WITHOUT PERMISSION — STUDY
+
+   You may view and read the source of the Work, and run it locally on your own
+   machine, for Study only. You may take private notes and learn from the
+   techniques it demonstrates.
+
+
+3. REQUIRES PRIOR WRITTEN PERMISSION
+
+   All other uses are reserved by the copyright holder. In particular, you may
+   NOT do any of the following without first obtaining the copyright holder's
+   express, prior, written permission:
+
+     (a) copy, reproduce, download for redistribution, mirror, or archive the
+         Work or any part of it beyond what your browser or tooling caches
+         automatically for Study;
+     (b) deploy, host, publish, or otherwise make the Work (in whole or in
+         part, modified or unmodified) available to any third party or on any
+         public or private server or service;
+     (c) use the Work or any portion of it in any other project, product, or
+         website, whether commercial or non-commercial;
+     (d) modify the Work or create derivative works from it for any purpose
+         other than Study;
+     (e) sublicense, sell, rent, or transfer any rights in the Work.
+
+   To request permission, contact: jose.e.h.lopez@gmail.com. Permission, if
+   granted, applies only to the specific use and party stated in writing and to
+   nothing else.
+
+
+4. RESERVATION OF RIGHTS
+
+   No rights are granted by implication, estoppel, or otherwise. Any right not
+   expressly granted in Section 2 is reserved by the copyright holder. Making
+   this repository publicly visible does not place it in the public domain and
+   does not waive any rights.
+
+
+5. THIRD-PARTY COMPONENTS
+
+   The Work incorporates or references third-party materials that are governed
+   by their own licenses and are NOT covered by this License, including but not
+   limited to: bundled or referenced fonts (e.g., the Academico and Mallory
+   font families) and any embedded or linked third-party media or services.
+   You are responsible for complying with the respective rights holders' terms
+   for those materials. This License grants you no rights in them.
+
+
+6. NO WARRANTY
+
+   THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY,
+   WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF,
+   OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS IN THE WORK.
+
+
+7. TERMINATION
+
+   Any breach of this License immediately and automatically terminates the
+   permission granted in Section 2. Upon termination you must cease accessing
+   the Work and destroy any copies in your possession.
