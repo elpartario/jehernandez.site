@@ -1369,10 +1369,28 @@ into a buffer, then looped by re-spawning short crossfading passes (the same
 seamless-loop trick as before, now one scheduler per track). Every track has
 its **own gain node** feeding a shared analyser (for the reactivity) and the
 master mute; switching tracks simply ramps the old track's gain to 0 and the
-new one's to 1 over `CFG.audioFade`, which is the crossfade. Track 1 loads
-immediately; tracks 2 and 3 preload in the background the moment the teponaztli
-is first pressed, so switching is instant. Playback only ever starts on a
-click/tap — browsers forbid autoplay with sound.
+new one's to 1 over `CFG.audioFade`, which is the crossfade.
+
+**First selection vs. later ones (the "resume" behavior).** A track's loop
+starts the **first time that track is selected**, playing **from the top of the
+file**, and then runs **continuously** — it is never stopped or restarted for
+the rest of the page's life. Consequences:
+
+- The **first** time you pick a numeral, that track begins at the beginning.
+- **Every later** switch back to it fades in **wherever it is now**, as if it
+  had been playing the whole time (because it has — silently, at gain 0). That
+  mid-track resume is the point of running each track's loop non-stop.
+- Because a loop is started exactly once and never torn down, two copies of a
+  track can't overlap (an earlier bug, when switching hard-stopped and later
+  restarted a loop while its long tail was still audible).
+
+Track 1 is auto-selected on the first teponaztli press, so it's the first to
+start from the top. Tracks 2 and 3 have their **buffers** preloaded at that same
+moment (so there's no fetch delay), but their **loops** don't begin until you
+first select them. Playback only ever starts on a click/tap — browsers forbid
+autoplay with sound. In code: `startTrackLoop()` has a one-per-track guard (so
+re-selecting never restarts it), and `selectTrack()` only crossfades gains;
+`tryStart()` starts track 1 and preloads the other two buffers.
 
 **Knobs.**
 - **Crossfade length** (both the loop seams *and* track-switch fades):
@@ -1462,6 +1480,11 @@ are grouped summaries; dates before the first tracked day are approximate.
     per-track self-crossfading loop scheduler, and `selectTrack()` that
     crossfades old→new over `CFG.audioFade`. Track 1 loads immediately; 2 and 3
     preload when the teponaztli is first pressed.
+  - **Fixed a track-overlap bug** (reselecting a track stacked a second copy):
+    a track's loop is now started exactly once and never stopped/restarted.
+  - **First selection plays from the top; later ones resume mid-track.** Each
+    track's loop begins the first time it's picked (from 0) and then runs
+    continuously, so switching back fades in wherever it "would" be (§8.8).
   - **UI**: the numerals slide out from behind the teponaztli on audio-on
     (`body.audio-on`, staggered), dim except the lit active track (1 by
     default), and retract on audio-off. Wired `#tracks` markup + `.tnum` CSS.
