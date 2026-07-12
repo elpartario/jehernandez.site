@@ -110,7 +110,12 @@ body {
 
 .lc-wrap {
 	position: fixed;
-	top: 1.4vmax;
+	/* top + height give the date the SAME 52px band as the menu and the
+	   top-right mini skull; align-items:center then drops the text to that
+	   band's vertical centre, lining it up with them (desktop menu, mobile
+	   mini skull). Raise `top` to move the whole band down. */
+	top: 1.3vmax;
+	height: 52px;
 	left: 50%;
 	transform: translateX(-50%);
 	z-index: 30;
@@ -169,7 +174,7 @@ body.page .menu a:hover { color: var(--color-main); }
 .menu svg { width: 1.15em; height: 1.15em; display: block; }
 
 @media (max-width: 700px) {
-	.lc-wrap { top: 1.6vmax; font-size: clamp(15px, 4.6vw, 22px); }
+	.lc-wrap { top: 1.3vmax; font-size: clamp(15px, 4.6vw, 22px); }  /* stays in the mini-skull band */
 	.menu {
 		top: auto;
 		bottom: 2.5vmax;             /* matches the light/dark toggle's height */
@@ -282,6 +287,10 @@ html.dark #themeT .moon { opacity: 0; transform: rotate(90deg) scale(0.6); }
 	cursor: pointer;
 	line-height: 1;
 }
+/* links inside the modal follow the site convention (like .sheet a):
+   body-ink underlined, accent on hover — never the browser's default blue */
+.why-card a { color: inherit; text-decoration: underline; }
+.why-card a:hover { color: var(--color-main); }
 
 /* ============ inner pages (left-aligned, big type) ============ */
 
