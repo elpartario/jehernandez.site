@@ -194,13 +194,16 @@
 	#swapBtn {
 		position: fixed;
 		right: 2.5vmax;
-		/* lifted so its center lines up with the teponaztli's glyph (which sits
-		   above its caption on the other side) */
-		bottom: calc(2.5vmax + 0.5em);
+		/* distance from the bottom of the screen — SMALLER = sits lower.
+		   (Was 2.5vmax + 0.5em; dropped a touch so the bigger button sits lower.) */
+		bottom: calc(2.5vmax - 0.6em);
 		z-index: 15;
-		/* --swap-size: the ONE knob to resize the heart/skull button.
-		   Default matches the teponaztli's width. */
-		--swap-size: clamp(64px, 7.5vmax, 110px);
+		/* --swap-size: the ONE knob to resize the heart/skull button. It is
+		   used for BOTH width and height (the button is a square), so changing
+		   this one value scales the whole thing. clamp(MIN, PREFERRED, MAX):
+		   64px on tiny screens, 7.5vmax normally, never past 110px — all ×1.5
+		   here vs the original to make the models read bigger. */
+		--swap-size: clamp(96px, 11.25vmax, 165px);
 		width: var(--swap-size);
 		height: var(--swap-size);
 		background: none;
@@ -215,7 +218,7 @@
 	#swapBtn canvas { width: 100%; height: 100%; display: block; }
 	@media (max-width: 700px) {
 		/* clear the bottom-right menu scrim on phones */
-		#swapBtn { bottom: calc(2.5vmax + 3em); }
+		#swapBtn { bottom: calc(2.5vmax + 3.5em); }   /* clears the taller button above the bottom menu */
 	}
 
 	/* light/dark toggle: same bottom-left corner as every other page (the
