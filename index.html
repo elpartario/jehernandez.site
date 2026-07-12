@@ -539,7 +539,7 @@ void main(){
 		noiseExp: [3.2, 0.55],           // [0] = constant breathing exponent used now; [1] = old mouse-X target (disabled)
 		noiseAmp: [0.008, 0.16],         // [0] = constant breathing amplitude used now; [1] = old mouse-Y target (disabled)
 		audioPush: 0.36,                 // world units at full spectral hit
-		audioSens: 0.9,                  // extra sensitivity (Crunchy is quiet)
+		audioSens: 0.9,                  // reactivity sensitivity for the MODELS (skull/heart/mini). The strangeTrig background has its own — CFG.bg.audioSens
 		audioFade: 0.5,                  // seconds of crossfade where the loop wraps around
 		fadeSec: 2.4,                    // skull fade-in after entering
 		mini: { count: 22000, pt: 2.3, scale: 0.85, amp: 0.05, exp: 1.2, audio: 0.5 },
@@ -557,7 +557,8 @@ void main(){
 		      typePool: [0, 1, 3, 6],    // which types the randomizer chooses from
 		      count: 55000, scale: 1.03, ptSize: 2.4, gain: 1.0,
 		      A0: 0.1, B0: 3.2, C0: 1.0, D0: 0.5, ARange: 1.7, BRange: 1.7,
-		      drift: 0.013, audioWobble: 0.3, blurDiv: 2, blurPx: 1.1 }
+		      drift: 0.013, audioWobble: 0.3, audioSens: 1.5, blurDiv: 2, blurPx: 1.1 }
+		      // bg.audioSens: reactivity sensitivity for the background only (separate from the models' audioSens)
 	};
 
 	// skull orientation: js/skull-rot.js (edit SKULL_ROT there).
@@ -933,25 +934,32 @@ void main(){
 	}));
 	updateNumerals();
 
+	// each band keeps its own auto-gain envelope plus two smoothed outputs, so the
+	// models and the background can react at different sensitivities from one FFT
 	const bands = [
-		{ from: 1, to: 6, env: 0.06, val: 0 },
-		{ from: 7, to: 40, env: 0.06, val: 0 },
-		{ from: 41, to: 110, env: 0.06, val: 0 }
+		{ from: 1, to: 6, env: 0.06, valModel: 0, valBg: 0 },
+		{ from: 7, to: 40, env: 0.06, valModel: 0, valBg: 0 },
+		{ from: 41, to: 110, env: 0.06, valModel: 0, valBg: 0 }
 	];
-	function audioLevel(){
-		// (mute is handled by reactEnv in the render loop, so on/off eases
-		// instead of snapping — the bands keep tracking the music meanwhile)
-		if (!analyser || !audioStarted || actx.state !== 'running') return 0;
+	function audioLevels(){
+		// returns { model, bg }. (mute is handled by reactEnv in the render loop,
+		// so on/off eases instead of snapping — the bands keep tracking meanwhile)
+		if (!analyser || !audioStarted || actx.state !== 'running') return { model: 0, bg: 0 };
 		analyser.getByteFrequencyData(freqData);
+		const smooth = (cur, target) => cur + (target - cur) * (target > cur ? 0.5 : 0.075);
 		for (const b of bands){
 			let s = 0;
 			for (let i = b.from; i <= b.to; i++) s += freqData[i];
 			const v = s / (b.to - b.from + 1) / 255;
 			b.env = Math.max(b.env * 0.9965, v, 0.05);
-			const norm = Math.min(1.5, (v / b.env) * CFG.audioSens);
-			b.val += (norm - b.val) * (norm > b.val ? 0.5 : 0.075);
+			const raw = v / b.env;                                   // 0..~1.x auto-gained loudness
+			b.valModel = smooth(b.valModel, Math.min(1.5, raw * CFG.audioSens));
+			b.valBg    = smooth(b.valBg,    Math.min(1.5, raw * CFG.bg.audioSens));
 		}
-		return 0.5 * bands[0].val + 0.3 * bands[1].val + 0.2 * bands[2].val;
+		return {
+			model: 0.5 * bands[0].valModel + 0.3 * bands[1].valModel + 0.2 * bands[2].valModel,
+			bg:    0.5 * bands[0].valBg    + 0.3 * bands[1].valBg    + 0.2 * bands[2].valBg
+		};
 	}
 
 	/* =================== interaction / entry flow =================== */
@@ -1068,13 +1076,15 @@ void main(){
 		// when muted/stopped — beats stay crisp, only the state change glides
 		const reactOn = running && audioStarted && !muted && actx.state === 'running';
 		reactEnv += ((reactOn ? 1 : 0) - reactEnv) * 0.045;
-		const push = audioLevel() * CFG.audioPush * reactEnv;
+		const lv = audioLevels();
+		const push = lv.model * CFG.audioPush * reactEnv;    // skull / heart / mini / preview
+		const pushBg = lv.bg * CFG.audioPush * reactEnv;     // strangeTrig background only
 
 		if (running) {
 			simT += dt;
 			sm.x = msm.x; sm.y = msm.y;
 			// the attractor drifts on its own and jolts a little with the music
-			phase = (phase + dt * (CFG.bg.drift + push * 0.05)) % 1;
+			phase = (phase + dt * (CFG.bg.drift + pushBg * 0.05)) % 1;
 
 			// heart morph: ease toward the target shape; reveal the offer when ready
 			morphT += (morphTarget - morphT) * CFG.heart.morphSpeed;
@@ -1109,7 +1119,7 @@ void main(){
 				gl.enableVertexAttribArray(0);
 				gl.vertexAttribPointer(0, 1, gl.FLOAT, false, 0, 0);
 				gl.uniform1f(U(bgP, 'uA'), CFG.bg.A0 + (sm.x - 0.5) * CFG.bg.ARange);
-				gl.uniform1f(U(bgP, 'uB'), CFG.bg.B0 + (sm.y - 0.5) * CFG.bg.BRange + push * CFG.bg.audioWobble);
+				gl.uniform1f(U(bgP, 'uB'), CFG.bg.B0 + (sm.y - 0.5) * CFG.bg.BRange + pushBg * CFG.bg.audioWobble);
 				gl.uniform1f(U(bgP, 'uC'), CFG.bg.C0);
 				gl.uniform1f(U(bgP, 'uD'), CFG.bg.D0);
 				gl.uniform1f(U(bgP, 'uPhase'), phase);
