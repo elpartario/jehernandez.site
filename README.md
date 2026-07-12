@@ -36,9 +36,13 @@ the skull.
   the default. The OS preference is deliberately ignored. The landing scene
   stays black either way.
 - **Audio** starts from the teponaztli (bottom-left): faded + "(turn audio
-  on)" until pressed, then full red + "(turn audio off)". The MP3 loops
-  through a 0.5s self-crossfade (no harsh cut), and turning it off eases the
-  skull's and background's reactivity out.
+  on)" until pressed, then full red + "(turn audio off)". There are **three
+  soundtracks**, chosen by **Mayan numerals 𝋡 𝋢 𝋣** that slide out from behind
+  the teponaztli when the sound is on (1 lit by default; the others dim); a
+  click **crossfades** to that track, and they retract when audio is off. Each
+  track loops through a 0.5s self-crossfade (no harsh cut), and turning it off
+  eases the skull's and background's reactivity out. (See
+  [DOCUMENTATION.md §8.8](DOCUMENTATION.md).)
 - **Every page** carries the long-count date, the menu and footer (both
   injected from single sources in `js/site.js`), the theme toggle, and the
   theme-aware mini corner skull.
@@ -47,9 +51,10 @@ the skull.
 
 ## Quick facts
 
-- Swap the music: replace `assets/loop.mp3` (same name); see
-  [DOCUMENTATION.md §1.1](DOCUMENTATION.md) for the fallback + conversion
-  one-liners.
+- Swap the music: replace `assets/loop.mp3` (same name) for track 1; the three
+  tracks are the `TRACKS` array in `index.html` (`loop`/`cicadas`/`blue14` =
+  numerals 1/2/3). See [DOCUMENTATION.md §1.1 / §8.8](DOCUMENTATION.md) for the
+  fallback + conversion one-liners and how to add a fourth.
 - Background attractor: `CFG.bg` in `index.html` — picks a random type from
   `typePool` (`[0,1,3,4,6]`) each load by default; set `typeRandom: false` to pin
   a fixed `type` (0–6). Test any live with `?trig=N`; `enabled: false` turns
@@ -73,6 +78,8 @@ the skull.
   Netlify via `_redirects`.
 - Deploy: drag the folder onto https://app.netlify.com, or push to GitHub →
   Settings → Pages. Security headers for Netlify live in `_headers`.
-- Weight: ≈ 4.2 MB first load (skull + heart point clouds ≈ 1.3 MB each, plus
-  audio), no frameworks, no external scripts, no trackers. Set
-  `CFG.heart.enabled: false` to drop the heart (~1.3 MB) if you want it lighter.
+- Weight: ≈ 4.2 MB first paint (skull + heart point clouds ≈ 1.3 MB each, plus
+  the default track); the other two soundtracks (~1.1 + 1.5 MB) preload only
+  after the teponaztli is first pressed. No frameworks, no external scripts, no
+  trackers. Set `CFG.heart.enabled: false` to drop the heart (~1.3 MB) if you
+  want it lighter.
