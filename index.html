@@ -539,7 +539,7 @@ void main(){
 		noiseExp: [3.2, 0.55],           // [0] = constant breathing exponent used now; [1] = old mouse-X target (disabled)
 		noiseAmp: [0.008, 0.16],         // [0] = constant breathing amplitude used now; [1] = old mouse-Y target (disabled)
 		audioPush: 0.36,                 // world units at full spectral hit
-		audioSens: 0.9,                 // extra sensitivity (Crunchy is quiet)
+		audioSens: 0.9,                  // extra sensitivity (Crunchy is quiet)
 		audioFade: 0.5,                  // seconds of crossfade where the loop wraps around
 		fadeSec: 2.4,                    // skull fade-in after entering
 		mini: { count: 22000, pt: 2.3, scale: 0.85, amp: 0.05, exp: 1.2, audio: 0.5 },
@@ -789,6 +789,8 @@ void main(){
 			t.gain.connect(analyser);         // analysis taps here (pre-master-mute)
 			t.gain.connect(outGain);
 			t.buf = null; t.timer = null; t.nextPass = 0; t.loading = null;
+			t.sources = [];      // in-flight buffer sources (so we can truly stop them)
+			t.stopTimer = null;  // pending deferred hard-stop after a crossfade
 		});
 	}
 
@@ -833,7 +835,17 @@ void main(){
 		fade.gain.linearRampToValueAtTime(0, tEnd);
 		src.start(t0);
 		src.stop(tEnd + 0.05);
-		src.onended = () => { src.disconnect(); fade.disconnect(); };
+		t.sources.push(src);
+		src.onended = () => {
+			src.disconnect(); fade.disconnect();
+			const k = t.sources.indexOf(src); if (k >= 0) t.sources.splice(k, 1);
+		};
+	}
+	// hard-stop every in-flight source of a track (not just gain-mute it) so a
+	// long buffer can't linger and get un-muted again when the track is reselected
+	function killSources(t){
+		t.sources.forEach(s => { try { s.stop(); } catch (e) {} try { s.disconnect(); } catch (e) {} });
+		t.sources = [];
 	}
 	function scheduleTrack(t){
 		if (!t.buf || !actx) return;
@@ -843,13 +855,17 @@ void main(){
 		}
 	}
 	function startTrackLoop(t){
-		if (t.timer || !t.buf || !actx) return;
+		if (t.stopTimer){ clearTimeout(t.stopTimer); t.stopTimer = null; }  // cancel a pending hard-stop
+		if (t.timer) return;        // scheduler already running — reuse it (its sources are the live loop)
+		killSources(t);             // clear any leftovers from a fully-stopped past life
 		t.nextPass = actx.currentTime + 0.03;
 		scheduleTrack(t);
 		t.timer = setInterval(() => scheduleTrack(t), 250);
 	}
-	function stopTrackLoop(t){
+	function stopTrackLoop(t){      // immediate, complete stop
 		if (t.timer){ clearInterval(t.timer); t.timer = null; }
+		if (t.stopTimer){ clearTimeout(t.stopTimer); t.stopTimer = null; }
+		killSources(t);
 	}
 
 	/* crossfade to track i (loads it first if needed). */
@@ -869,7 +885,11 @@ void main(){
 				prev.gain.gain.cancelScheduledValues(now);
 				prev.gain.gain.setValueAtTime(prev.gain.gain.value, now);
 				prev.gain.gain.linearRampToValueAtTime(0, now + CFG.audioFade);
-				setTimeout(() => stopTrackLoop(prev), CFG.audioFade * 1000 + 250);
+				// after the crossfade completes, hard-stop prev's sources (tracked
+				// on prev.stopTimer so reselecting prev mid-fade cancels the kill)
+				if (prev.stopTimer) clearTimeout(prev.stopTimer);
+				prev.stopTimer = setTimeout(() => { prev.stopTimer = null; stopTrackLoop(prev); },
+					CFG.audioFade * 1000 + 250);
 			}
 		};
 		next.buf ? run() : loadTrack(i).then(run).catch(e => console.error('[site] track', i, e));
