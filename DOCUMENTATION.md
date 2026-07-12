@@ -966,12 +966,14 @@ For visitors who stick around the landing page: a small red **heart made of
 particles** fades in at the bottom-right (mirroring the teponaztli's spot).
 Clicking it makes the skull's 160,000 particles **slide in real time into the
 shape of the heart** — and the button then shows a small skull, which morphs
-everything back. The big heart keeps all the skull's jobs: it's audio-reactive,
-it fades/freezes with the overlay, and **clicking the center still opens the
-site**. Two behaviors differ: the heart does **not** follow the mouse — it
-rotates steadily with time (TouchDesigner `absTime.seconds` style) — and it
-**beats**, swelling gently as your cursor approaches the clickable center
-circle (the closer you get, the stronger the thump).
+everything back — and the corner button morphs right along with it, always
+showing the shape the next click will produce. The big heart keeps all the
+skull's jobs: it's audio-reactive, it fades/freezes with the overlay, and
+**clicking the center still opens the site**. Two behaviors differ: the heart
+does **not** follow the mouse — it rotates steadily with time (TouchDesigner
+`absTime.seconds` style) — and it **beats** by pushing its particles outward,
+faster and bigger as the mouse nears the **center of the screen**, easing off
+toward the edges (details and knobs below).
 
 **When it appears.** First load: `appearAfter` seconds (default 5) after the
 text hints finish clearing. If the visitor entered the site before that and
@@ -987,9 +989,9 @@ heart: { enabled: true,          // false = no heart surprise at all (site behav
          appearAfter: 5,         // seconds after the hints clear (first load)
          appearAfterReturn: 3,   // seconds after coming back from the popover
          morphSpeed: 0.035,      // easing toward the other shape (higher = faster morph)
-         beatAmp: 0.085,         // how much the heart swells as the mouse nears the center
-         beatRate: 1.15,         // heartbeats per second
-         spinSpeed: 0.55 },      // heart rotation in radians/s (absTime-style)
+         beatAmp: 0.14,          // max particle push at a beat peak (mouse Y higher = stronger)
+         beatRate: 1.15,         // base beats/s (mouse X right = up to ~2.4x faster)
+         spinSpeed: 0.25 },      // heart rotation in radians/s (absTime-style)
 ```
 
 `enabled: false` is the whole-feature kill switch: the heart data is never
@@ -1021,30 +1023,52 @@ follows the mouse, both react to the music.
 number tweaks in the `CFG.heart` block; two need a one-line code change in the
 render loop. Here's each, from easiest to most involved:
 
-- **Spin speed & direction** — `CFG.heart.spinSpeed` (default `0.55`), in
+- **Spin speed & direction** — `CFG.heart.spinSpeed` (default `0.25`), in
   radians per second. Bigger = faster; **negative reverses** the direction;
-  `0` = the heart hangs still. This is the whole "how fast does it turn"
-  knob, and it also drives the little corner preview so they always match.
-- **The beat** — `CFG.heart.beatAmp` (default `0.085`) is how much the heart
-  swells at the peak of a beat; `CFG.heart.beatRate` (default `1.15`) is beats
-  per second. Set `beatAmp: 0` for no beat at all. The beat only kicks in as
-  the cursor nears the clickable center; that reach is the `0.25` in the
-  `prox` line of the render loop (search `Math.min(innerWidth, innerHeight) *
-  0.25` in `index.html` — raise it to make the heart respond from farther
-  away, lower it to require getting closer).
+  `0` = the heart hangs still. It also drives the corner preview so they
+  always match. (Under the hood the spin is an *accumulated angle* — `spinA`,
+  advanced by `dt * spinSpeed` each frame and wrapped to within half a turn
+  when you click — not `time × speed`. That's deliberate: the old version
+  multiplied by elapsed time, so the longer the page sat the faster the
+  morph whipped around. Leave the accumulator alone unless you know why.)
+- **The beat** — the heart pulses by pushing its **particles outward** (not
+  by scaling the whole model). Two knobs: `CFG.heart.beatAmp` (default `0.14`)
+  is the strongest push at a beat's peak, and `CFG.heart.beatRate` (default
+  `1.15`) is the base beats per second. Set `beatAmp: 0` for no beat.
+
+  **Center-proximity mapping (heart-only).** The beat responds to how close
+  the mouse is to the **center of the screen**: near the middle the heart
+  beats **faster and pulses bigger**, and it eases off toward the edges and
+  corners. This is intentionally *separate* from the skull — the skull's mouse
+  response (X = noise exponent, Y = noise amplitude) is a different code path
+  and is not touched by any of this. The mechanism is one line in the render
+  loop of `index.html` (search `centerProx`):
+  ```js
+  const centerProx = Math.max(0, 1 - Math.hypot(sm.x - 0.5, sm.y - 0.5) / 0.6);
+  ```
+  `sm.x`/`sm.y` are the smoothed pointer in `0..1` screen coordinates, so
+  `(sm.x-0.5, sm.y-0.5)` is the offset from center and `Math.hypot(...)` is the
+  distance to it. Dividing by **`0.6`** sets the reach (in screen-halves): at
+  the exact center `centerProx` is `1`, and it falls linearly to `0` at
+  `0.6` of the way to a corner — raise that number for a gentler, wider
+  falloff, lower it to make only the dead-center count. `centerProx` then
+  scales both the rate (`0.6 + 1.8 * centerProx` on the `beatPhase +=` line,
+  so up to ~2.4× at center) and the push (`0.3 + 1.0 * centerProx` on the
+  `beatPush =` line). (This replaced an earlier mouse-Y "noise push" on the
+  heart; that Y-noise is faded out for the heart via `* (1 - morphT)` on the
+  `uAmp` line, so the beat is the heart's whole mouse response.)
 - **Spin axis** — by default the heart turns like a carousel, around the
   **vertical axis** (yaw). That's set by *which* look-component gets the spin
-  term in the render loop. Find this line in `index.html` (the skull draw):
+  angle in the render loop. Find this line in `index.html` (the skull draw):
   ```js
   gl.uniform2f(U(skullP, 'uLook'),
-      (sm.x - 0.5) * CFG.lookAmt[0] * (1 - morphT) + simT * CFG.heart.spinSpeed * morphT,   // yaw
-      (sm.y - 0.5) * CFG.lookAmt[1] * (1 - morphT));                                          // pitch
+      (sm.x - 0.5) * CFG.lookAmt[0] * (1 - morphT) + spinA * morphT,   // yaw
+      (sm.y - 0.5) * CFG.lookAmt[1] * (1 - morphT));                    // pitch
   ```
-  The `+ simT * CFG.heart.spinSpeed * morphT` on the **first** argument spins
-  it around vertical. Move that same term to the **second** argument instead
-  to make it tumble forward/backward (pitch) rather than turn. (Roll — spinning
-  flat in the screen plane — isn't reachable this way; ask and it can be added
-  through the rotation matrix.)
+  The `+ spinA * morphT` on the **first** argument spins it around vertical.
+  Move that term to the **second** argument to make it tumble forward/backward
+  (pitch) instead. (Roll — flat in the screen plane — isn't reachable this
+  way; ask and it can be added through the rotation matrix.)
 - **Resting tilt / which way the heart faces** — the heart appears in its raw
   model orientation because the morph fades the skull's orientation matrix out
   to identity: `rotMix(ROT, IDENT, morphT)` in the render loop. To lean the
@@ -1052,11 +1076,16 @@ render loop. Here's each, from easiest to most involved:
   `rotMix(ROT, skullRotMatrix([['x', 20], ['y', -15]]), morphT)` (degrees, same
   axis/notation as `SKULL_ROT` in `js/skull-rot.js`). Leave `spinSpeed` doing
   the continuous turn; this only sets the tilt it spins around.
+- **Corner-button size** — the bottom-right heart/skull button has one knob,
+  `--swap-size` on `#swapBtn` in the `index.html` `<style>` block (default
+  `clamp(64px, 7.5vmax, 110px)`, which matches the teponaztli's width). Change
+  that one value to resize it; its vertical alignment is the `bottom` on the
+  same rule.
 
-If a change should also show in the bottom-right preview thumbnail, note the
-preview uses `spinSpeed` too (search `showHeart ? simT * CFG.heart.spinSpeed`),
-so the spin-speed and direction stay in sync automatically; axis/tilt edits
-there are optional and live a few lines below in the "swap preview" block.
+The bottom-right preview **also morphs** when clicked, mirroring the big shape
+(it always shows what the *next* click produces), and it shares `spinSpeed`,
+`beatAmp/Rate` and the beat's mouse mapping automatically — so those edits
+carry over with no extra work.
 
 ---
 
