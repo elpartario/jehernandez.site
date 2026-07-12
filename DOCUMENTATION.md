@@ -684,7 +684,7 @@ Everything tunable sits in one object near the top of the main `<script>` in
 | `noiseExp` | [3.2, 0.55] | `[0]` = constant breathing exponent (used); `[1]` = old mouse-X target, now disabled |
 | `noiseAmp` | [0.008, 0.16] | `[0]` = constant breathing amplitude (used); `[1]` = old mouse-Y target, now disabled |
 | `audioPush` | 0.36 | how far points shoot outward at a full spectral hit |
-| `audioSens` | 1.35 | multiplier on the auto-gained band levels |
+| `audioSens` | 0.9 | reactivity sensitivity for the **models** (skull/heart/mini/preview). The background has its own — `bg.audioSens` |
 | `fadeSec` | 2.4 | skull fade-in duration after entering |
 | `mini.count` | 22000 | points used by the corner skull |
 | `mini.pt / scale / amp / exp` | — | corner-skull point size / size / noise |
@@ -697,6 +697,7 @@ Everything tunable sits in one object near the top of the main `<script>` in
 | `bg.ARange, BRange` | 1.7 | how far the mouse bends A (x-axis) and B (y-axis) |
 | `bg.drift` | 0.013 | speed of the slow autonomous phase drift |
 | `bg.audioWobble` | 0.3 | how much the music bends B (extra motion on hits) |
+| `bg.audioSens` | 1.5 | reactivity sensitivity for the **background only** (separate from the models' `audioSens`) |
 | `bg.blurDiv` | 2 | background renders at 1/blurDiv resolution (2 = half res; higher = blurrier/cheaper) |
 | `bg.blurPx` | 1.1 | blur tap spread in buffer pixels (higher = softer) |
 | `bg.type` | 0 | which attractor formula (0–6) — only used when `typeRandom` is false (§1.6) |
@@ -812,10 +813,14 @@ nothing" autoplay trap can't happen.
 Reactivity: the 256-bin FFT is split into low (bins 1–6), mid (7–40), high
 (41–110). Each band tracks its own running maximum (decaying at 0.9965/frame)
 and reports `value / max` — this **auto-gain** is why a quiet track like
-Crunchy still hits hard. Bands are smoothed (fast attack 0.5, slow release
-0.075), weighted 50/30/20, scaled by `audioSens`, and drive `audioPush`
-(skull), `bg.audioWobble` (background), and the mini skull at `mini.audio`
-strength.
+Crunchy still hits hard. From that one auto-gained level `audioLevels()`
+produces **two** smoothed outputs (fast attack 0.5, slow release 0.075,
+weighted 50/30/20): one scaled by `audioSens` for the **models** (drives
+`audioPush` on the skull, the mini skull at `mini.audio`, and the preview) and
+one scaled by `bg.audioSens` for the **background** (drives `bg.audioWobble`
+and the phase drift). The two sensitivities are independent, so the attractor
+can react harder than the skull (or vice-versa) — they just share the same FFT
+and auto-gain envelopes.
 
 Opening the overlay calls `AudioContext.suspend()` (music freezes mid-sample);
 closing calls `resume()`. The teponaztli button: first press starts audio
@@ -1488,6 +1493,10 @@ are grouped summaries; dates before the first tracked day are approximate.
   - **UI**: the numerals slide out from behind the teponaztli on audio-on
     (`body.audio-on`, staggered), dim except the lit active track (1 by
     default), and retract on audio-off. Wired `#tracks` markup + `.tnum` CSS.
+- **Reactivity sensitivity lowered** to `audioSens: 0.9`, then **split** so the
+  strangeTrig background has its own `bg.audioSens` (1.5) independent of the
+  models' sensitivity — `audioLevels()` now returns separate model/bg levels
+  from one FFT (`push` vs `pushBg`).
 - **Numeral vertical position** anchored to the teponaztli SVG's center via a
   single `--tnum-center` knob (built from the same vmax/width pieces so it
   tracks all screen sizes) + `translateY(50%)`; documented the logic in §8.8.
