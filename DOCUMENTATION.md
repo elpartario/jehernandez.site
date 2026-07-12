@@ -568,7 +568,10 @@ every page.
 
 ### 3.1 The entry flow
 
-The page has three states, driven by two CSS classes on `<body>`:
+The page has three states, driven mainly by two CSS classes on `<body>`
+(`entered` and `overlay-open`, with a few helper classes for hints and the
+heart). The overlay page is **not red** — it takes the current theme
+(light `#f0f0f0` by default, or dark), see [8.1](#81-light--dark).
 
 1. **Fresh load** — the strangeTrig attractor drifting behind, the long-count
    date top-center, the teponaztli bottom-left (faded, captioned "(turn audio
@@ -581,25 +584,38 @@ The page has three states, driven by two CSS classes on `<body>`:
    forever after the first click, and the text hints also fade out 10s after
    they appear if nothing is clicked (see [8.2](#82-the-landing-hints)); styles
    are under `#hint` / `#hintDrag` in index.html. No menu, no corner skull yet.
-   **Music starts
-   only when the teponaztli is pressed** — browsers forbid autoplay with sound
-   anyway, so the switch is explicit.
-2. **First skull click** (`body.entered`) — the red overlay opens *and* the
-   site chrome is revealed: the **mini corner skull** fades in top-right and
-   the **menu** appears. From then on both persist.
-3. **Overlay open/closed** (`body.overlay-open`, toggled by the main skull,
-   the corner skull, or Escape) — the red page carries the bio, portfolio
-   embeds, and links. **The scene freezes** while it's open: the render loop
-   stops advancing and the music suspends mid-note; both resume exactly where
-   they left off on close. The mini corner skull stays alive as the way back.
-   The long-count date docks left and the "?" button appears.
+   **Music starts only when the teponaztli is pressed** — browsers forbid
+   autoplay with sound anyway, so the switch is explicit.
+
+   **The heart surprise fits into this state.** A few seconds after the hints
+   clear (`CFG.heart.appearAfter`, default 5s), a small particle **heart button
+   fades in bottom-right** (`body.swap-ready`). Clicking it morphs the skull's
+   particles into the heart and back; the heart rotates and beats on its own
+   and is itself clickable to enter the site. It's a landing-only flourish —
+   full detail and all its knobs are in [8.7](#87-the-heart-surprise-skull--heart-morph).
+   Set `CFG.heart.enabled: false` to remove it entirely.
+2. **First skull (or heart) click** (`body.entered`) — the overlay opens *and*
+   the site chrome is revealed: the **mini corner skull** fades in top-right
+   (it persists from now on, the way back), and the **menu**, **theme toggle**,
+   and the date's **"?" button** appear. On the landing these last three ride
+   *with* the overlay — visible while it's open, hidden again on the black scene
+   — so they toggle on and off as you move between the two (the corner skull is
+   the only chrome that stays put on the black landing).
+3. **Overlay open/closed** (`body.overlay-open`, toggled by the main
+   skull/heart, the corner skull, or Escape) — the overlay page carries the
+   bio, portfolio embeds, and links, in the current theme. **The scene freezes**
+   while it's open: the render loop stops advancing and the music suspends
+   mid-note; both resume exactly where they left off on close (including the
+   morph — the heart doesn't reset). The long-count date docks to the top-left.
 
 States are managed by `toggleSite()` / `setOverlay()` in the main script.
 The inner pages' corner skulls link back to the fresh landing (`index.html`),
-so visitors restart the flow from the skull. A deep link also exists —
-`index.html#home` skips straight to state 3 (entered, overlay open, skull
-already faded in behind) — if you ever want a link that lands directly on the
-red page.
+so visitors restart the flow from the skull. If a visitor enters the site and
+then returns to the landing via the corner skull *before* the heart has
+appeared, the heart is offered `CFG.heart.appearAfterReturn` seconds (default
+3) after they get back. A deep link also exists — `index.html#home` skips
+straight to state 3 (entered, overlay open, skull already faded in behind) —
+if you ever want a link that lands directly on the overlay home.
 
 ### 3.2 CFG reference
 
