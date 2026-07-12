@@ -172,7 +172,7 @@ body.page .menu a:hover { color: var(--color-main); }
 	.lc-wrap { top: 1.6vmax; font-size: clamp(15px, 4.6vw, 22px); }
 	.menu {
 		top: auto;
-		bottom: 2vmax;
+		bottom: 2.5vmax;             /* matches the light/dark toggle's height */
 		right: 2.5vmax;
 		height: auto;
 		/* single line: tighter gaps + smaller type so the icon never wraps */
