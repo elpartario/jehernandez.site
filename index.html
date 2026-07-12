@@ -216,10 +216,9 @@
 	}
 	body.swap-ready #swapBtn { opacity: 1; pointer-events: auto; }
 	#swapBtn canvas { width: 100%; height: 100%; display: block; }
-	@media (max-width: 700px) {
-		/* clear the bottom-right menu scrim on phones */
-		#swapBtn { bottom: calc(2.5vmax + 3.5em); }   /* clears the taller button above the bottom menu */
-	}
+	/* no mobile override for #swapBtn: it sits at the same lowered `bottom` as
+	   desktop. (The bottom menu it used to dodge is hidden on the black landing
+	   — it only appears with the overlay, which covers the button anyway.) */
 
 	/* light/dark toggle: same bottom-left corner as every other page (the
 	   default from site.css). Shown only while the overlay is open — and the
