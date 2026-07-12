@@ -210,7 +210,7 @@
 		                                   382×255, so height ≈ 0.667 × width)
 		   translateY(50%) then parks the numeral row's own center on that line,
 		   so it stays centered no matter the numeral size. ONE knob to move the
-		   numerals up/down: raise --tnum-center to move them UP, lower it for down. */
+		   numerals up/down: lower --tnum-center percentage to move them UP, raise percentage it for down. */
 		--tnum-center: calc(2.5vmax + 1.4rem + 0.334 * clamp(64px, 7.5vmax, 110px));
 		bottom: var(--tnum-center);
 		transform: translateY(33%);
