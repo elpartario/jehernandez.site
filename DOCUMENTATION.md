@@ -291,7 +291,7 @@ switches:
 bg: { enabled: true,         // set false to turn the background off entirely
       type: 0,               // attractor type 0..6, used when typeRandom is false
       typeRandom: true,      // true = pick a random type from typePool on each load
-      typePool: [0, 1, 3, 4, 6],// which types the randomizer draws from
+      typePool: [0, 1, 3, 6],// which types the randomizer draws from
 ```
 
 `enabled: false` = pure black behind the skull, zero background GPU cost,
@@ -309,7 +309,7 @@ identical across types. Types 4–6 also use the `D0` parameter (default
 
 - `typeRandom: true` (the default) — every time the page loads, the
   background randomly becomes one of the types listed in `typePool`
-  (currently `[0, 1, 3, 4, 6]`, evenly chosen). Refreshing gives you a
+  (currently `[0, 1, 3, 6]`, evenly chosen). Refreshing gives you a
   different one. Edit `typePool` to change the menu it draws from — e.g.
   `[2, 5, 6]`, or a single-item list like `[3]` to effectively pin it.
 - `typeRandom: false` — the randomizer is off and the background always
@@ -321,7 +321,7 @@ one type for that visit and **beats the randomizer** — handy for previewing
 each formula. Remove the `?trig=` from the URL to hand control back to
 `typeRandom`. On every load the browser console prints the chosen type and
 whether it was random or fixed, e.g. `[site] strangeTrig type: 4 (random
-from [0,1,3,4,6])`.
+from [0,1,3, 6])`.
 
 ### 1.7 Edit the texts (and the menu / footer — one place each)
 
