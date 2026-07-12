@@ -109,7 +109,7 @@ const WHY_TEXT = `
 	calendrical tracking on these lands now known as the Americas. Timekeeping is not neutral: 
 	it invites us into longer genealogies that precede colonial naming, persist beyond it, and 
 	continue to shape how these lands are understood.</p>
-	<p>For more info, <a href="https://www.penn.museum/sites/expedition/maya-long-count-numbers/?utm_source=chatgpt.com" target="_blank" rel="noopener">click here</a>.</p>
+	<p>For more info, <a href="https://www.penn.museum/sites/expedition/maya-calendars/" target="_blank" rel="noopener">click here</a>.</p>
 `;
 
 const whyBtn = document.getElementById('whyBtn');
