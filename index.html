@@ -470,8 +470,8 @@ void main(){
 		scale: 0.78, focal: 1.55, cam: 2.6,
 		lookAmt: [1.15, 0.75],           // how far it turns to follow the mouse (yaw, pitch)
 		pointSize: 1.9,
-		noiseExp: [3.2, 0.55],           // mouse x: left -> right maps exponent high -> low
-		noiseAmp: [0.008, 0.16],         // mouse y: bottom -> top maps amplitude low -> high
+		noiseExp: [3.2, 0.55],           // [0] = constant breathing exponent used now; [1] = old mouse-X target (disabled)
+		noiseAmp: [0.008, 0.16],         // [0] = constant breathing amplitude used now; [1] = old mouse-Y target (disabled)
 		audioPush: 0.36,                 // world units at full spectral hit
 		audioSens: 1.35,                 // extra sensitivity (Crunchy is quiet)
 		audioFade: 0.5,                  // seconds of crossfade where the loop wraps around
@@ -481,8 +481,9 @@ void main(){
 		         appearAfter: 5,         // seconds after the hints clear (first load)
 		         appearAfterReturn: 3,   // seconds after coming back from the popover
 		         morphSpeed: 0.035,      // easing toward the other shape (higher = faster morph)
-		         beatAmp: 0.14,          // max particle push at a beat peak (mouse Y higher = stronger)
-		         beatRate: 1.15,         // base beats/s (mouse X right = up to ~2.4x faster)
+		         beatAmp: 0.14,          // max particle push at a beat peak (bigger near screen center)
+		         beatRate: 1.15,         // base beats/s (up to ~2.4x faster near screen center)
+		         beatReach: 0.6,         // center-pull radius (screen-halves): 1 at center -> 0 this far out
 		         spinSpeed: 0.25 },      // heart rotation in radians/s (absTime-style)
 		bg: { enabled: true,             // set false to turn the background off entirely
 		      type: 0,                   // strangeTrig attractor type: 0..6 (used when typeRandom is false)
@@ -951,7 +952,7 @@ void main(){
 			// mouse nears the CENTER of the screen (heart-only; the skull's X/Y
 			// noise mapping is separate and untouched). centerProx: 1 at center,
 			// easing to 0 toward the corners (0.6 = the reach, in screen halves).
-			const centerProx = Math.max(0, 1 - Math.hypot(sm.x - 0.5, sm.y - 0.5) / 0.6);
+			const centerProx = Math.max(0, 1 - Math.hypot(sm.x - 0.5, sm.y - 0.5) / CFG.heart.beatReach);
 			beatPhase += dt * CFG.heart.beatRate * (0.6 + 1.8 * centerProx) * 6.2831853;
 			const thump = Math.pow(Math.max(0, Math.sin(beatPhase)), 3);
 			beatPush = CFG.heart.beatAmp * (0.3 + 1.0 * centerProx) * thump;
@@ -1022,8 +1023,13 @@ void main(){
 				}
 				gl.uniform1f(U(skullP, 'uTime'), simT);
 				gl.uniform1f(U(skullP, 'uFade'), skullFade);
-				gl.uniform1f(U(skullP, 'uAmp'), CFG.noiseAmp[0] + (1 - sm.y) * (CFG.noiseAmp[1] - CFG.noiseAmp[0]) * (1 - morphT));
-				gl.uniform1f(U(skullP, 'uExp'), CFG.noiseExp[0] + sm.x * (CFG.noiseExp[1] - CFG.noiseExp[0]));
+				// constant "breathing" noise — the mouse no longer pushes the skull's
+				// particles outward (mouse-LOOK below is untouched, audio push stays).
+				// To restore the old mouse-driven push, swap in the two commented lines.
+				gl.uniform1f(U(skullP, 'uAmp'), CFG.noiseAmp[0]);
+				gl.uniform1f(U(skullP, 'uExp'), CFG.noiseExp[0]);
+				// gl.uniform1f(U(skullP, 'uAmp'), CFG.noiseAmp[0] + (1 - sm.y) * (CFG.noiseAmp[1] - CFG.noiseAmp[0]) * (1 - morphT));
+				// gl.uniform1f(U(skullP, 'uExp'), CFG.noiseExp[0] + sm.x * (CFG.noiseExp[1] - CFG.noiseExp[0]));
 				gl.uniform1f(U(skullP, 'uAudio'), push);
 				gl.uniform1f(U(skullP, 'uPt'), CFG.pointSize * dpr);
 				gl.uniform1f(U(skullP, 'uScale'), CFG.scale * fit);
