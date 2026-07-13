@@ -51,9 +51,9 @@ const MENU_ICONS = [
    Same link rules as the menu. The year updates itself. */
 const FOOTER_LINKS = [
 	['alkabil.audio', 'https://www.alkabil.audio'],
-	['Bio', 'about.html'],
-	['My Work', 'work.html'],
-	['Contact Me', 'contact.html'],
+	['Bio', 'about'],
+	['My Work', 'work'],
+	['Contact Me', 'contact'],
 	['Buy My Music', 'https://alkabilmusic.square.site/'],
 ];
 
