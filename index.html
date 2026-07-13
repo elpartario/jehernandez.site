@@ -299,7 +299,9 @@
 		bottom: calc(2.5vmax - 1.5em);   /* MOBILE bottom (desktop override below) */
 		transform: translateX(-50%);
 		z-index: 15;
-		--bg-size: clamp(96px, 11.25vmax, 165px);   /* MOBILE size (desktop override below) */
+		/* --bg-size = the ONE knob for the square's size (width = height). MOBILE
+		   value; desktop overridden below. ~0.85× the swap button's size. */
+		--bg-size: clamp(82px, 9.6vmax, 140px);
 		width: var(--bg-size);
 		height: var(--bg-size);
 		background: none;
@@ -313,8 +315,8 @@
 	body.bg-ready #bgBtn { opacity: 1; pointer-events: auto; }
 	#bgBtn canvas { width: 100%; height: 100%; display: block; }
 	@media (min-width: 701px) {
-		/* DESKTOP only: match the swap button's lower sit, and its own size. */
-		#bgBtn { bottom: calc(2.5vmax - 2.3em); --bg-size: clamp(96px, 11.25vmax, 165px); }
+		/* DESKTOP only: match the swap button's lower sit, and its own (smaller) size. */
+		#bgBtn { bottom: calc(2.5vmax - 2.3em); --bg-size: clamp(82px, 9.6vmax, 140px); }
 	}
 
 	/* light/dark toggle: same bottom-left corner as every other page (the
@@ -496,10 +498,21 @@ attribute float aId;
 uniform float uA, uB, uC, uD, uPhase, uScale, uPtBg, uBgMorph;
 uniform int uTypeA, uTypeB;   // attractor types being blended (uBgMorph = A->B)
 varying float vB;
+varying float vRad;           // clip-space distance from center (for the preview's edge fade)
 float h(float n){ return fract(sin(n) * 43758.5453); }
-// one point's final position for a given attractor type (all seven from
-// strangeTrig.tox). Runtime-selected now (was a compile-time #define) so we can
-// morph between two of them by mixing their outputs.
+/* One point's final position for a given attractor type (all seven from
+   strangeTrig.tox). Each type is a 2-D map (x,y) -> (x',y') applied a few times;
+   repeatedly iterating it pulls the points onto the "attractor" shape. The maps,
+   with A,B,C,D = uA,uB,uC,uD and ph = per-group phase:
+     0:  x' = sin(x²−y² + A + ph)              y' = cos(C·x·y + B + ph)
+     1:  x' = sin(C·y + A + ph)                y' = cos(C·x + B + ph)
+     2:  x' = sin(x²+y² + A + ph)              y' = cos(C·y²·x + B + ph)
+     3:  x' = sin(x²−y² + A + ph)              y' = cos(C·x·y·B + ph)
+     4:  x' = sin(A·y/2 + ph) − cos(B·x/2 + ph) y' = sin(C·x + ph) − cos(D·y + ph)   (·0.5)
+     5:  x' = sin(A·y/2 + ph) + C·cos(A·x/2+ph) y' = sin(B·x/2+ph) + D·cos(B·y/2+ph) (·0.5)
+     6:  x' = sin(A·x²−B·y² + ph)              y' = cos(C·x·y + D·(x+y) + ph)
+   (Runtime-selected now — was a compile-time #define — so we can morph between
+   two types by mixing their outputs. See DOCUMENTATION §3.4 for the full guide.) */
 vec2 iterate(int t, float x, float y, float grp, float ph){
 	for (int i = 0; i < 9; i++){
 		if (float(i) > grp + 1.0) break;
@@ -529,14 +542,20 @@ void main(){
 	gl_Position = vec4(p.x * uScale, p.y * uScale, 0.5, 1.0);
 	gl_PointSize = uPtBg;
 	vB = 0.35 + 0.65 * h(aId + 7.7);
+	vRad = length(gl_Position.xy);   // 0 at center -> larger toward the edges
 }
 	</script>
 	<script id="fs-bg" type="x-shader/x-fragment">
 precision mediump float;
+uniform float uEdgeFade;   // 0 = off (main background); >0 = exponential radial fade (preview)
 varying float vB;
+varying float vRad;
 void main(){
 	float d = length(gl_PointCoord - 0.5);
 	float m = smoothstep(0.5, 0.05, d) * vB;
+	// soften the preview's square edges: a Gaussian (exp(-k·r²)) radial falloff,
+	// ~1 in the middle and fading out toward the rim. uEdgeFade is the strength k.
+	if (uEdgeFade > 0.0) m *= exp(-uEdgeFade * vRad * vRad);
 	// alpha = m so the (transparent) preview canvas shows just the points; the
 	// main background renders to an opaque buffer whose alpha is ignored by the blit
 	gl_FragColor = vec4(m * 0.55, m * 0.02, m * 0.03, m);
@@ -601,7 +620,9 @@ void main(){
 		      btnDelay: 5,            // seconds AFTER the heart button appears
 		      btnCount: 14000,        // points in the little preview (fewer = cheaper)
 		      btnScale: 0.72,         // fit the attractor inside the square preview
-		      btnPtSize: 2.0 }
+		      btnPtSize: 2.0,         // preview point size
+		      btnEdgeBlur: true,      // fade the preview's square edges (false = hard square)
+		      btnEdgeAmount: 3.5 }    // edge-fade strength (bigger = tighter/softer vignette)
 		      // bg.audioSens: reactivity sensitivity for the background only (separate from the models' audioSens)
 	};
 
@@ -1232,6 +1253,7 @@ void main(){
 				gl.uniform1i(U(bgP, 'uTypeA'), bgTypeA);
 				gl.uniform1i(U(bgP, 'uTypeB'), bgTypeB);
 				gl.uniform1f(U(bgP, 'uBgMorph'), bgMorphT);
+				gl.uniform1f(U(bgP, 'uEdgeFade'), 0.0);   // full-screen bg is never edge-faded
 				gl.enable(gl.BLEND);
 				gl.blendFunc(gl.ONE, gl.ONE);
 				gl.drawArrays(gl.POINTS, 0, CFG.bg.count);
@@ -1390,6 +1412,7 @@ void main(){
 			bgpgl.uniform1i(BU('uTypeA'), bgTypeA);
 			bgpgl.uniform1i(BU('uTypeB'), bgTypeB);
 			bgpgl.uniform1f(BU('uBgMorph'), bgMorphT);
+			bgpgl.uniform1f(BU('uEdgeFade'), CFG.bg.btnEdgeBlur ? CFG.bg.btnEdgeAmount : 0.0);
 			bgpgl.enable(bgpgl.BLEND);
 			bgpgl.blendFunc(bgpgl.ONE, bgpgl.ONE);
 			bgpgl.drawArrays(bgpgl.POINTS, 0, CFG.bg.btnCount);
