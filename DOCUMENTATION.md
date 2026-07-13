@@ -847,17 +847,14 @@ at screen center (the skull rotates in place, so a fixed hitbox works).
 
 A faithful port of the `strangeTrig.tox` compute shader — **all seven
 attractor types (0–6)** from the TD component, chosen per load by the
-randomizer or pinned with `CFG.bg.type` (see [1.6](#16-the-strangetrig-background-onoff-and-picking-an-attractor)).
-The type is baked into the shader at compile time by a `#define ATTR_TYPE N`
-prefix, so only the selected formula is active. Each of the 55,000 particles:
+randomizer or pinned with `CFG.bg.type` (see [1.6](#16-the-strangetrig-background-onoff-and-picking-an-attractor)),
+and now switchable live via the morph button ([8.9](#89-the-background-attractor-morph-button-bottom-center)).
+Each of the 55,000 particles:
 
 1. seeds itself in a scattered disc from its id (`hash(id)`),
 2. iterates its attractor formula up to 9 times — but each particle group stops
    at a different depth (`grp = id mod 9`), which is what layers the structure
-   exactly like the TD original. (Type 0, for example, is
-   `x' = sin(x² − y² + A + φ)`, `y' = cos(C·x·y + B + φ)`; types 4–6 also use a
-   `D` parameter. The full set lives in the `#if ATTR_TYPE` block of the `vs-bg`
-   shader in index.html.)
+   exactly like the TD original,
 3. is drawn as a dim red additive point **into a half-resolution buffer**,
    which is then upscaled to the screen through a 5-tap blur (`fs-blit`) —
    that's the soft look. `bg.blurDiv`/`bg.blurPx` control it (see table).
@@ -866,7 +863,51 @@ Mouse x bends parameter **A**, mouse y bends **B** around the TD component's
 defaults; the music adds a wobble on **B** and speeds up the slow phase drift
 (`bg.audioWobble`). The output is intentionally **stretched to the viewport**
 (no aspect correction) so it always fills the page. The dim-red point color is
-in the `fs-bg` fragment shader (§1.3).
+in the `fs-bg` fragment shader (§1.3). The type is a **runtime `int` uniform**
+(`uTypeA`/`uTypeB`) — it used to be a compile-time `#define`, but making it a
+uniform is what lets the morph button blend two types (§8.9).
+
+**How the attractors actually work (a mini-guide).** Each "type" is a **2-D
+map** — a pair of formulas that take a point `(x, y)` and produce a new point
+`(x', y')`. Feed the new point back in and repeat, and the points stop wandering
+and settle onto a shape: the map's *attractor*. That's the whole idea — no
+geometry is stored, the shape is an **emergent** property of iterating simple
+trig. A few things worth holding in your head:
+
+- **A, B, C, D** (`CFG.bg.A0/B0/C0/D0`, and A/B nudged by the mouse) are
+  constants *inside* the formulas. Small changes to them can reshape the whole
+  attractor — that's why moving the mouse morphs the texture. (Types 0–3 ignore
+  D; 4–6 use it.)
+- **`ph` (phase)** is a per-group offset (and it drifts slowly over time, plus a
+  music wobble). Because each of the 9 groups gets a different phase and a
+  different number of iterations, the one formula draws many nested copies at
+  once — the layered, filamentary look.
+- **Iterating more** sharpens the point onto the attractor; the group that
+  iterates once looks like a loose cloud, the group that iterates 9× is tight on
+  the shape. The staggering blends the two.
+- **Why they look "trig-y":** every output goes through `sin`/`cos`, so
+  everything is bounded to roughly `[-1, 1]` — the attractor always fits the
+  screen, and the curves are smooth and wave-like.
+
+**The seven maps** (with `A,B,C,D` = the params and `ph` = phase; these are the
+`strangeTrig.tox` formulas, and they're mirrored in a comment above `iterate()`
+in the `vs-bg` shader):
+
+| # | x′ | y′ |
+|---|---|---|
+| 0 | `sin(x² − y² + A + ph)` | `cos(C·x·y + B + ph)` |
+| 1 | `sin(C·y + A + ph)` | `cos(C·x + B + ph)` |
+| 2 | `sin(x² + y² + A + ph)` | `cos(C·y²·x + B + ph)` |
+| 3 | `sin(x² − y² + A + ph)` | `cos(C·x·y·B + ph)` |
+| 4 | `sin(A·y/2 + ph) − cos(B·x/2 + ph)` | `sin(C·x + ph) − cos(D·y + ph)` |
+| 5 | `sin(A·y/2 + ph) + C·cos(A·x/2 + ph)` | `sin(B·x/2 + ph) + D·cos(B·y/2 + ph)` |
+| 6 | `sin(A·x² − B·y² + ph)` | `cos(C·x·y + D·(x+y) + ph)` |
+
+(Types 4 and 5 additionally halve their result so they sit in the same range as
+the others.) To invent an eighth: add an `else if (t == 7)` branch to
+`iterate()` with your own `x`/`y` formulas, add `7` to `CFG.bg.typePool`, and
+bump the loop's type range — everything else (morph, preview, randomizer) picks
+it up for free.
 
 ### 3.5 Audio pipeline
 
@@ -1594,12 +1635,20 @@ renders to an opaque buffer whose alpha the blit ignores.)
 - `btnDelay` — seconds after the heart button before it appears.
 - `morphSpeed` — how fast the background rearranges on click (bigger = faster).
 - `btnCount` / `btnPtSize` — points in the preview and their size.
-- `btnScale` — fits the attractor inside the square preview (bigger = larger).
+- `btnScale` — fits the attractor *inside* the square (bigger = the shape fills
+  more of the square; this is not the square's size — that's `--bg-size` below).
+- `btnEdgeBlur` — **toggle** for the soft edges: `true` fades the square's edges
+  out radially, `false` = a hard square. `btnEdgeAmount` is the strength — it's
+  a Gaussian falloff `exp(−amount·r²)` from the center, so it's **exponential,
+  not linear** (bigger = a tighter, softer vignette; try 2–5).
 - `typePool` — the set it cycles through (shared with the random picker, §1.6).
-- **Position/size** — the `#bgBtn` rule in `index.html`'s `<style>`: it's
-  `left: 50%` + `translateX(-50%)` (centered); `bottom` and `--bg-size` are
-  **split desktop/mobile** exactly like `#swapBtn` (base = mobile, the
-  `@media (min-width: 701px)` block = desktop), so each is tunable on its own.
+- **The square's on-screen size** — the `--bg-size` custom property on the
+  `#bgBtn` rule in `index.html`'s `<style>` (it sets both width and height).
+  It's **split desktop/mobile**: the base `#bgBtn` rule is the mobile size and
+  the `@media (min-width: 701px)` block is the desktop size — edit whichever you
+  mean. Currently ~0.85× the swap button; shrink/grow the `clamp(...)` to taste.
+- **Position** — same `#bgBtn` rule: `left: 50%` + `translateX(-50%)` centers
+  it; `bottom` is also split desktop/mobile exactly like `#swapBtn`.
 
 ---
 
@@ -1646,6 +1695,17 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-12 — attractor button: soft edges, formulas, guide
+- **Exponential radial edge fade** on the preview square (`exp(−k·r²)` from
+  center, via a `vRad` varying + `uEdgeFade` uniform in `fs-bg`), so the square
+  no longer has a hard border. Toggle `CFG.bg.btnEdgeBlur` (+ `btnEdgeAmount`);
+  the full-screen background always passes `uEdgeFade = 0`, so it's unaffected.
+- **Preview square shrunk ~0.85×** (`--bg-size`), documented as the size knob.
+- **The seven attractor formulas are back** — as a readable table in §3.4 and a
+  comment above `iterate()` in the shader — plus a new **mini-guide** on how the
+  attractors work (iterated 2-D maps, the role of A/B/C/D, phase, iteration
+  depth) and how to add an eighth.
 
 ### 2026-07-12 — background-attractor morph button (§8.9)
 - Added a **bottom-center morph button** that previews the current strangeTrig
