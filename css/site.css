@@ -352,6 +352,10 @@ body.page { background: var(--color-page); color: var(--ink); }
 	.bio-photo { width: min(340px, 85%); margin-top: 1.6rem; }
 }
 
+/* the "featured work / full list of works" line at the foot of each work page
+   (filled by js/site.js into the <p class="worknav"> shell) */
+.worknav { margin-top: 3rem; }
+
 .works-list p { margin: 0 0 0.45em; }
 .works-list h2 { margin-top: 2.8rem; }
 .jump {
