@@ -84,7 +84,7 @@ document.querySelectorAll('nav.menu').forEach(nav => {
 document.querySelectorAll('footer.foot').forEach(f => {
 	f.innerHTML = '<p class="muted">© J.E. Hernández ' + new Date().getFullYear() + ' &nbsp;·&nbsp; ' +
 		FOOTER_LINKS.map(([label, dest]) => linkHTML(label, dest)).join(' &nbsp;·&nbsp; ') +
-		' &nbsp;·&nbsp; Website design <button class="why-btn" id="designBtn" aria-label="About the website design">?</button>' +
+		' &nbsp;·&nbsp; Website design info<button class="why-btn" id="designBtn" aria-label="About the website design">?</button>' +
 		'</p>';
 });
 
@@ -189,7 +189,7 @@ const CUICATL_TEXT = `
 /* ============ "WEBSITE DESIGN" (footer) — EDIT THE TEXT HERE, ONCE ============
    Opens from the "?" beside "Website design" in the footer on every page. */
 const DESIGN_TEXT = `
-	<p><strong>Website design</strong></p>
+	<p><strong>Webdesign Credits:</strong></p>
 	<p>Website designed by J.E. Hernández based on work done as 
 	<a href="https://www.yslas.music/" target="_blank" rel="noopener">Yslas</a>, produced by 
 	<a href="https://silbaca.tv/" target="_blank" rel="noopener">Sílbaca</a>. Inspired 
