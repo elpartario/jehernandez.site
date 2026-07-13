@@ -41,6 +41,7 @@ The [README](README.md) is the short version; this is the complete one.
    - [8.6 Crediting the inspiration](#86-crediting-the-inspiration)
    - [8.7 The heart surprise (skull ↔ heart morph)](#87-the-heart-surprise-skull--heart-morph)
    - [8.8 The audio: three tracks + the Mayan-numeral selector](#88-the-audio-three-tracks--the-mayan-numeral-selector)
+   - [8.9 The background-attractor morph button](#89-the-background-attractor-morph-button-bottom-center)
 9. [Security notes](#9-security-notes)
 10. [Changelog](#10-changelog)
 
@@ -370,6 +371,10 @@ each formula. Remove the `?trig=` from the URL to hand control back to
 `typeRandom`. On every load the browser console prints the chosen type and
 whether it was random or fixed, e.g. `[site] strangeTrig type: 4 (random
 from [0,1,3, 6])`.
+
+**Visitors can cycle attractors too**, via the bottom-center morph button —
+it steps forward through this same `typePool` and morphs the background between
+types. Full detail and its knobs are in [8.9](#89-the-background-attractor-morph-button-bottom-center).
 
 ### 1.7 Edit the texts (and the menu / footer — one place each)
 
@@ -1553,6 +1558,51 @@ re-selecting never restarts it), and `selectTrack()` only crossfades gains;
 
 ---
 
+### 8.9 The background-attractor morph button (bottom center)
+
+A little square button appears **bottom-center** on the landing a few seconds
+after the heart button. It previews the current strangeTrig attractor
+(unblurred, audio-reactive), and **clicking it cycles to the next attractor in
+the pool** — the whole background rearranges its particles into the new shape,
+the same morph the skull↔heart does.
+
+**Behavior.**
+- **Appears** `CFG.bg.btnDelay` seconds (default 5) after the heart button
+  (`body.bg-ready`). If the heart feature is off it's tied to the same timing;
+  set `CFG.bg.morphButton: false` to remove the button entirely (the background
+  itself is unaffected and keeps working exactly as before).
+- **Cycles** forward through `CFG.bg.typePool` and **loops** — after the last
+  pool entry it returns to the first. It starts from whatever attractor loaded
+  (the random pick), so the first click advances to the *next* pool member.
+- **Morphs** by blending two attractors in the vertex shader
+  (`uTypeA`→`uTypeB` by `uBgMorph`, eased at `CFG.bg.morphSpeed`); when the
+  morph finishes it settles on the new type, ready for the next click.
+- The preview and the full-screen background share the same type/morph state,
+  so they always match; both react to the music (`bg.audioSens`, §3.5).
+
+**How it works (the shader change).** The attractor type used to be baked in at
+compile time (`#define ATTR_TYPE`); it's now a **runtime `int` uniform**, and
+the vertex shader computes the point for *two* types and `mix()`es them — that
+mix is the morph. The big background renders to the blurred low-res buffer as
+always; the button is a separate small WebGL canvas (`#bgPrev`) drawing the
+same attractor **without** the blur. (`fs-bg`'s alpha is now the point mask so
+that preview canvas is transparent behind the points; the main background
+renders to an opaque buffer whose alpha the blit ignores.)
+
+**Knobs** (all in the `bg` block of `CFG`, `index.html`):
+- `morphButton` — `false` removes the button (background untouched).
+- `btnDelay` — seconds after the heart button before it appears.
+- `morphSpeed` — how fast the background rearranges on click (bigger = faster).
+- `btnCount` / `btnPtSize` — points in the preview and their size.
+- `btnScale` — fits the attractor inside the square preview (bigger = larger).
+- `typePool` — the set it cycles through (shared with the random picker, §1.6).
+- **Position/size** — the `#bgBtn` rule in `index.html`'s `<style>`: it's
+  `left: 50%` + `translateX(-50%)` (centered); `bottom` and `--bg-size` are
+  **split desktop/mobile** exactly like `#swapBtn` (base = mobile, the
+  `@media (min-width: 701px)` block = desktop), so each is tunable on its own.
+
+---
+
 ## 9. Security notes
 
 The honest summary: **a static site like this has almost no attack surface of
@@ -1596,6 +1646,21 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-12 — background-attractor morph button (§8.9)
+- Added a **bottom-center morph button** that previews the current strangeTrig
+  attractor (square, unblurred, audio-reactive) and, on click, **cycles forward
+  through `CFG.bg.typePool` (looping)** while the whole background **morphs**
+  its particles into the new type — the same effect as the skull↔heart morph.
+- **Shader change:** the attractor type went from a compile-time
+  `#define ATTR_TYPE` to a **runtime `int` uniform**; the vertex shader now
+  computes two types and `mix()`es them (`uTypeA`/`uTypeB`/`uBgMorph`). `fs-bg`
+  alpha is now the point mask so the preview canvas is transparent (harmless to
+  the blurred main background). All existing background behavior is unchanged.
+- New `CFG.bg` knobs: `morphButton`, `morphSpeed`, `btnDelay`, `btnCount`,
+  `btnScale`, `btnPtSize`. Button appears `btnDelay` s after the heart button;
+  `#bgBtn` is centered with desktop/mobile-split `bottom`/size like `#swapBtn`.
+- Docs: new §8.9 (+ Contents), §1.6 cross-reference, this entry.
 
 ### 2026-07-12 — deploy fix, responsive splits, louder audio
 - **GitHub Pages deploy diagnosed:** the `/work/` pages 404'd (all but the
