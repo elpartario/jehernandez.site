@@ -72,10 +72,13 @@ the skull.
 - Font: Academico (or Mallory) — one line in `css/site.css`.
 - Favicon: rendered from the actual point cloud — regenerate with
   `python tools/make-favicon.py`.
-- URLs match the old jehernandez.music exactly — `/about`, `/work`,
+- Clean URLs match the old jehernandez.music exactly — `/about`, `/work`,
   `/contact`, `/flow`, `/work/<slug>` — on both Netlify and GitHub Pages
-  (both serve `x.html` at `/x`); `/store` forwards to the Square store on
-  Netlify via `_redirects`.
+  (both serve `x.html` at `/x`, so links carry **no `.html`**; use `/` for the
+  homepage). `/store` forwards to the Square store on Netlify via `_redirects`.
+  Link/home conventions: DOCUMENTATION.md §1.11.
+- Contact form: **Web3Forms** (emails you each submission; access key in
+  `contact.html`), works on any host — DOCUMENTATION.md §1.12.
 - Deploy: drag the folder onto https://app.netlify.com, or push to GitHub →
   Settings → Pages. Security headers for Netlify live in `_headers`.
 - Weight: ≈ 4.2 MB first paint (skull + heart point clouds ≈ 1.3 MB each, plus
