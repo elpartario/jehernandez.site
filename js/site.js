@@ -195,7 +195,7 @@ const DESIGN_TEXT = `
 	<a href="https://silbaca.tv/" target="_blank" rel="noopener">Sílbaca</a>. Inspired 
 	by <a href="https://www.404zero.com/" target="_blank" rel="noopener">404.zero</a>.</p>
 	<p>If you're interested in website design like this for your own project, please
-	don't hesitate to <a href="/contact" target="_blank" rel="noopener">contact me</a>.
+	don't hesitate to <a href="/contact" target="_blank" rel="noopener">contact me</a>.</p>
 `;
 
 /* Wire a "?" button to its modal. The button (<button class="why-btn" id="...">)
