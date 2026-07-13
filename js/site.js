@@ -83,7 +83,36 @@ document.querySelectorAll('nav.menu').forEach(nav => {
 });
 document.querySelectorAll('footer.foot').forEach(f => {
 	f.innerHTML = '<p class="muted">© J.E. Hernández ' + new Date().getFullYear() + ' &nbsp;·&nbsp; ' +
-		FOOTER_LINKS.map(([label, dest]) => linkHTML(label, dest)).join(' &nbsp;·&nbsp; ') + '</p>';
+		FOOTER_LINKS.map(([label, dest]) => linkHTML(label, dest)).join(' &nbsp;·&nbsp; ') +
+		' &nbsp;·&nbsp; Website design <button class="why-btn" id="designBtn" aria-label="About the website design">?</button>' +
+		'</p>';
+});
+
+/* ============ FEATURED WORKS — quick-nav injected on the full-works page ============
+   Fills <nav class="featured-nav"> on flow.html with links to the featured
+   pieces (the ones with their own pages), for fast jumping. It is ONLY these
+   works — not the site menu. [slug, title]; the slug is the /work/<slug> page. */
+const FEATURED_WORKS = [
+	['parallax', 'Parallax (or 33,000 Stolen Sunsets)'],
+	['eastendechoes', 'East End Echoes Vol. 1'],
+	['mechanisms', 'Mechanisms'],
+	['soul-echoes', 'Soul Echoes'],
+	['helah', 'Helah'],
+	['desert-shelter', 'Desert Shelter'],
+	['double-refraction', 'Double Refraction'],
+	['show-me', 'Show Me (WAITT Variation)'],
+	['voces-fantasmas', 'Voces Fantasmas'],
+	['in-flanders-fields', 'In Flanders Fields'],
+	['seis-bagatelas', 'Seis Bagatelas (Owl Bagatelles)'],
+	['cube-cubo', 'cube (cubo)'],
+	['the-pontar-river', 'The Pontar River'],
+	['our-sons', 'Our Sons'],
+	['sheer', 'SHEER'],
+	['angulos', 'Ángulos'],
+];
+document.querySelectorAll('.featured-nav').forEach(el => {
+	el.innerHTML = FEATURED_WORKS.map(([slug, title]) =>
+		'<a href="' + cleanHref('work/' + slug) + '">' + title + '</a>').join('');
 });
 
 /* ============ WORK-PAGE NAV — EDIT ONCE, CHANGES ON EVERY WORK PAGE ============
@@ -157,13 +186,34 @@ const CUICATL_TEXT = `
 	expressive history.</p>
 `;
 
-/* Wire a "?" button to its modal. Both are empty shells in the HTML: a
-   <button class="why-btn" id="..."> and a <div class="why-modal" id="...">
-   containing an empty <div class="why-card">. To add another explainer
-   anywhere, drop those two shells in a page and add one wireModal() line. */
+/* ============ "WEBSITE DESIGN" (footer) — EDIT THE TEXT HERE, ONCE ============
+   Opens from the "?" beside "Website design" in the footer on every page. */
+const DESIGN_TEXT = `
+	<p><strong>Website design</strong></p>
+	<p>[Placeholder — replace this text in js/site.js (the DESIGN_TEXT constant).
+	Write about who designed and built the site, the tools behind it (hand-coded
+	HTML/CSS/WebGL, the point-cloud skull, the strangeTrig background), and any
+	credits you'd like.]</p>
+`;
+
+/* Wire a "?" button to its modal. The button (<button class="why-btn" id="...">)
+   lives in the page/footer; the modal shell is created here if the page doesn't
+   already contain a <div class="why-modal" id="..."> — so a footer/injected
+   button needs no per-page HTML. To add another explainer: (1) put a
+   `<button class="why-btn" id="myBtn">?</button>` where you want the mark,
+   (2) write a MY_TEXT constant, (3) add `wireModal('myBtn','myModal', MY_TEXT);`.
+   Styling is inherited from .why-modal / .why-card, so you only write words. */
 function wireModal(btnId, modalId, html) {
-	const btn = document.getElementById(btnId), modal = document.getElementById(modalId);
-	if (!btn || !modal) return;
+	const btn = document.getElementById(btnId);
+	if (!btn) return;
+	let modal = document.getElementById(modalId);
+	if (!modal) {                                   // auto-create the shell if absent
+		modal = document.createElement('div');
+		modal.id = modalId;
+		modal.className = 'why-modal';
+		modal.innerHTML = '<div class="why-card"></div>';
+		document.body.appendChild(modal);
+	}
 	const card = modal.querySelector('.why-card');
 	card.innerHTML = '<button class="why-close" aria-label="Close">×</button>' + html;
 	btn.addEventListener('click', () => modal.classList.add('open'));
@@ -172,6 +222,7 @@ function wireModal(btnId, modalId, html) {
 }
 wireModal('whyBtn', 'why', WHY_TEXT);
 wireModal('cuicatlBtn', 'cuicatlModal', CUICATL_TEXT);
+wireModal('designBtn', 'designModal', DESIGN_TEXT);   // shell auto-created (footer button)
 
 /* copy-to-clipboard: navigator.clipboard only exists in a "secure context"
    (https, localhost, or file://). Served to a plain http:// LAN address it's
