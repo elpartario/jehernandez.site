@@ -81,8 +81,12 @@ the skull.
   `contact.html`), works on any host — DOCUMENTATION.md §1.12.
 - Deploy: drag the folder onto https://app.netlify.com, or push to GitHub →
   Settings → Pages. Security headers for Netlify live in `_headers`.
-- Weight: ≈ 4.2 MB first paint (skull + heart point clouds ≈ 1.3 MB each, plus
-  the default track); the other two soundtracks (~1.1 + 1.5 MB) preload only
-  after the teponaztli is first pressed. No frameworks, no external scripts, no
-  trackers. Set `CFG.heart.enabled: false` to drop the heart (~1.3 MB) if you
-  want it lighter.
+- Weight: **≈ 3.9 MB first paint** — skull + heart point clouds (~1.22 MB each)
+  + the default track (~1.2 MB) + fonts/CSS/JS. The other two soundtracks
+  (~1.0 + 1.4 MB) preload only after the teponaztli is first pressed. No
+  frameworks, no external scripts, no trackers. Set `CFG.heart.enabled: false`
+  to drop the heart (~1.22 MB) if you want it lighter.
+- Repo size: **≈ 17 MB** on disk. About 8 MB of that is the base64 `file://`
+  fallbacks (`assets/*.js`) — a **served** site never downloads them; they only
+  matter for double-clicking the page from disk. Safe to delete if you only
+  ever use the deployed/served site (see DOCUMENTATION.md §1.8).
