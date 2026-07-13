@@ -190,10 +190,12 @@ const CUICATL_TEXT = `
    Opens from the "?" beside "Website design" in the footer on every page. */
 const DESIGN_TEXT = `
 	<p><strong>Website design</strong></p>
-	<p>[Placeholder — replace this text in js/site.js (the DESIGN_TEXT constant).
-	Write about who designed and built the site, the tools behind it (hand-coded
-	HTML/CSS/WebGL, the point-cloud skull, the strangeTrig background), and any
-	credits you'd like.]</p>
+	<p>Website designed by J.E. Hernández based on work done as 
+	<a href="https://www.yslas.music/" target="_blank" rel="noopener">Yslas</a>, produced by 
+	<a href="https://silbaca.tv/" target="_blank" rel="noopener">Sílbaca</a>. Inspired 
+	by <a href="https://www.404zero.com/" target="_blank" rel="noopener">404.zero</a>.</p>
+	<p>If you're interested in website design like this for your own project, please
+	don't hesitate to <a href="/contact" target="_blank" rel="noopener">contact me</a>.
 `;
 
 /* Wire a "?" button to its modal. The button (<button class="why-btn" id="...">)
