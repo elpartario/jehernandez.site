@@ -482,10 +482,20 @@ closing the browser tab does **not** stop it. To shut it down:
      name it `<username>.github.io` if you want it at that root URL).
   2. Put the **contents** of the `jehernandez` folder at the repo root —
      either drag them into github.com → *Add file → Upload files*, or
-     `git init` / commit / push from the folder. Make sure the hidden
-     `.nojekyll` file comes along (it's already in the folder): it stops
-     GitHub from running the site through its Jekyll processor, which would
-     otherwise interfere with underscore-prefixed files like `_redirects`.
+     `git init` / commit / push from the folder. **The hidden `.nojekyll` file
+     MUST reach the repo root** — it's easy to miss because file pickers and
+     some drag-and-drops hide dotfiles, and Git may ignore it. Confirm it's
+     there in the repo's file list before deploying.
+
+     > ⚠️ **This is the #1 thing that breaks a deploy.** `.nojekyll` tells
+     > GitHub to skip the Jekyll build and serve the files as-is. Without it,
+     > GitHub runs Jekyll, which silently drops files/folders it doesn't like —
+     > the classic symptom is **most of the `/work/` pages 404 while one of them
+     > (whichever Jekyll happened to keep, e.g. the alphabetically first) still
+     > works**, and/or the Pages deployment failing outright ("other side
+     > closed"). If you see that, the fix is almost always: add `.nojekyll` to
+     > the root and redeploy. (To verify from a terminal: `git ls-files` should
+     > list `.nojekyll`.)
   3. Repo → **Settings → Pages** → Source: *Deploy from a branch*, branch
      `main`, folder `/ (root)`, Save. The site appears at
      `https://<username>.github.io/<repo>/` within a minute or two; every
@@ -1095,15 +1105,25 @@ after the front page: a few KB (everything's cached).
 
 ## 7. Troubleshooting
 
+- **On GitHub Pages, most `/work/` pages 404 (or only one works) and/or the
+  deploy fails ("other side closed")** — the `.nojekyll` file didn't make it to
+  the repo root, so GitHub ran Jekyll and dropped pages. Add `.nojekyll` to the
+  root (`git ls-files` should list it) and redeploy. See recipe 1.8.
 - **No sound** — by design the music only starts from the teponaztli
   (bottom-left); browsers forbid autoplay with sound anyway. Sound off also
   means the skull and background stop reacting — that's intentional.
 - **Skull faces the wrong way** — recipe 1.5 (`?rot=` then bake into
   `js/skull-rot.js`).
-- **Skull/audio missing when double-clicking index.html** — make sure
-  `assets/skull.js` and `assets/audio.js` exist (they're the file:// path).
-  Embeds (SoundCloud/Vimeo/YouTube) may still refuse on file:// — that's the
-  embed providers, not the site; use `python -m http.server`.
+- **Opening the site from disk (file://)** — since the switch to clean URLs
+  (recipe 1.11), **navigation between pages needs a server** (`/about` etc.
+  don't resolve on `file://`), so double-clicking `index.html` is only good for
+  a quick look at the landing. For real local viewing use
+  `python -m http.server` (recipe 1.8). The landing's own graphics/audio do
+  still load from disk via the base64 fallbacks (`assets/skull.js`,
+  `heart.js`, `audio.js`, `cicadas.js`, `blue14.js`) — if the skull or sound is
+  missing there, make sure those files exist. Embeds
+  (SoundCloud/Vimeo/YouTube) may still refuse on `file://` regardless — that's
+  the embed providers, not the site.
 - **A YouTube embed shows "Error 153 — Video player configuration error"** —
   error 153 means YouTube received **no referrer** from the embedding page.
   Two ways that happens: (a) the page was opened from disk (`file://` has no
@@ -1388,13 +1408,14 @@ render loop. Here's each, from easiest to most involved:
   (big screens). To make it bigger/smaller, scale all three numbers together
   (e.g. ×1.33 → `clamp(128px, 15vmax, 220px)`); to pin one fixed size instead,
   just write a single value like `110px`.
-- **Corner-button position** — two values on the `#swapBtn` rule.
-  `bottom` (currently `calc(2.5vmax - 1.5em)`) is the gap from the bottom of
-  the screen up to the button, so **a smaller number sits lower**. `right`
-  (currently `1.4vmax`) is the gap from the right edge, so **a smaller number
-  sits further right**. Both apply on desktop and mobile (there is no separate
-  mobile override — the bottom menu it used to dodge is hidden on the black
-  landing, appearing only with the overlay, which covers the button anyway).
+- **Corner-button position** — two values on the `#swapBtn` rule. `right`
+  (currently `1.4vmax`) is the gap from the right edge — **smaller sits further
+  right** — and applies on both desktop and mobile. `bottom` is the gap from the
+  bottom — **smaller sits lower** — and is **split**: the base `#swapBtn` rule
+  (`calc(2.5vmax - 1.5em)`) is the **mobile** value, and a `@media (min-width:
+  701px)` block just below lowers it a bit more on **desktop**
+  (`calc(2.5vmax - 2.3em)`). Edit whichever screen you mean; they're
+  independent.
 
 The bottom-right preview **also morphs** when clicked, mirroring the big shape
 (it always shows what the *next* click produces), and it shares `spinSpeed`,
@@ -1477,28 +1498,52 @@ re-selecting never restarts it), and `selectTrack()` only crossfades gains;
 - **Crossfade length** (both the loop seams *and* track-switch fades):
   `CFG.audioFade` (seconds) in the `CFG` block. Sensitivity of the reactivity
   is still `CFG.audioSens` / `CFG.audioPush` (see [3.5](#35-audio-pipeline)).
+- **Per-track loudness (`vol`)** — each entry in the `TRACKS` array has a `vol`
+  gain multiplier so the three play equally loud **without re-encoding the mp3s**
+  (`1.0` = the file's own level; it scales only the audible gain, not the
+  reactivity, which auto-gains per band). To retarget them all to a chosen
+  loudness, use:
+
+  > **`vol = 10 ^ ((TARGET_LUFS − TRACK_LUFS) / 20)`**
+
+  where `TRACK_LUFS` is that file's measured integrated loudness and
+  `TARGET_LUFS` is the level you want them all at. Measured values here: **loop
+  −24.2, cicadas −26.3, blue14 −17.2 LUFS.** At the current **target −18 LUFS**
+  that gives `vol` = **2.05 / 2.61 / 0.91**. Raise the target (e.g. −16) to make
+  everything louder — but if a `vol` pushes a track's peaks past 0 dB it will
+  clip, so don't go wildly high (these three have headroom at −18). To measure a
+  new track's LUFS, run ffmpeg's loudnorm analysis and read `input_i`:
+  ```
+  "C:\Program Files\Derivative\TouchDesigner\bin\ffmpeg.exe" -i assets\yourtrack.mp3 -af loudnorm=print_format=json -f null -
+  ```
 - **Numeral position** — the `#tracks` rule in `index.html`'s `<style>`.
   `left` sets where the row starts (it clears the teponaztli's width); `gap` is
   the spacing between numerals; `.tnum` `font-size` is their size; the slide
   distance is the `translateX(-2.4em)` on `.tnum` (how far left they start, i.e.
   how far they travel out), and the per-numeral `transition-delay`s are the
   stagger.
-  - **Vertical position (the important one)** — the numeral row is **centered
-    on the teponaztli's SVG glyph**, and it stays centered at every screen size
-    because it's anchored to the same measurements the teponaztli is built from.
-    The single knob is the `--tnum-center` custom property on `#tracks`: it is
-    the distance from the **bottom of the screen up to the center of the glyph**,
-    and **lowering the percentage moves the numerals up**, raising it moves them down. Its
-    default is `calc(2.5vmax + 1.4rem + 0.334 * clamp(64px, 7.5vmax, 110px))`,
-    which is, piece by piece: `2.5vmax` (the teponaztli's own gap from the
-    bottom) `+ 1.4rem` (the height of the "(audio on/off)" caption that sits
-    under the glyph) `+ 0.334 × the teponaztli's width` (half the glyph's
-    height — the teponaztli SVG is 382×255, so its height is ≈ 0.667 × its
-    width, and half of that is 0.334×). The `transform: translateY(50%)` right
-    below it is what actually parks the row's own center on that line, so you
-    never have to account for the numerals' own height — just move
-    `--tnum-center`. If you resize the teponaztli (its `width` clamp) or change
-    its caption, nudge the `1.4rem`/`0.334` terms to match.
+  - **Vertical position (the important one) — two knobs on `#tracks`.** The row
+    is positioned relative to the teponaztli's SVG glyph and there are **two**
+    controls; in practice you only ever touch the second one:
+    1. **`--tnum-center`** — the fixed *anchor*: the distance from the bottom of
+       the screen up to the **center of the glyph**. It's a length (not a
+       percentage): `calc(2.5vmax + 1.4rem + 0.334 * clamp(64px, 7.5vmax, 110px))`
+       = `2.5vmax` (the teponaztli's own gap from the bottom) `+ 1.4rem` (the
+       "(audio on/off)" caption line under the glyph) `+ 0.334 × teponaztli width`
+       (half the glyph height; the SVG is 382×255, so height ≈ 0.667 × width).
+       Built from the teponaztli's own measurements so it tracks every screen
+       size. Only touch this if you resize the teponaztli or change its caption.
+    2. **`--tnum-shift`** — the *fine knob you actually tune*, applied as
+       `transform: translateY(var(--tnum-shift))`. It's a **percentage of the
+       row's own height**. **DIRECTION (important, and easy to get backwards):
+       LOWER the % → numerals move UP; RAISE the % → numerals move DOWN.** (At
+       `50%` the row sits exactly centered on the anchor; `33%` lifts it above.)
+       Why: `translateY` shifts the row *down* by that percent of its height, so
+       a bigger percent pushes it lower.
+    - **Desktop vs mobile are split** because the numerals size differently on
+      each. Desktop uses `--tnum-shift` in the main `#tracks` rule (currently
+      `33%`); **mobile** overrides it in the `@media (max-width: 700px)` block
+      (currently `50%`). Tune each independently — same direction rule for both.
 - **Numeral font** — `MayanNumerals` (Noto Sans Mayan Numerals, subset to the
   digits), `@font-face` at the top of the `#tracks` CSS. The glyphs are the
   real Unicode Mayan numerals `&#x1D2E1;`–`&#x1D2E3;` (bars-and-dots).
@@ -1551,6 +1596,25 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-12 — deploy fix, responsive splits, louder audio
+- **GitHub Pages deploy diagnosed:** the `/work/` pages 404'd (all but the
+  alphabetically-first, angulos) because **`.nojekyll` hadn't reached the repo
+  root**, so Jekyll ran and dropped the folder. Documented prominently in §1.8
+  and §7 — no code change, it's a deploy-hygiene issue.
+- **Audio loudness raised to a −18 LUFS target** (was ~−24): per-track `vol`
+  now 2.05 / 2.61 / 0.91 (`10^((−18−trackLUFS)/20)`). Added the retarget
+  formula + ffmpeg measurement command to §8.8.
+- **Desktop/mobile split for three positions**, each independent:
+  - Mayan numerals: introduced `--tnum-shift` (the translateY %, the real fine
+    knob) with desktop `33%` / mobile `50%`; corrected the direction note
+    everywhere — **lower % raises, higher % lowers** — and clarified that
+    `--tnum-center` is a separate fixed anchor (§8.8).
+  - Morph button (`#swapBtn`) sits a bit lower on **desktop only** (mobile
+    unchanged) via a `min-width: 701px` override.
+  - Light/dark toggle (`#themeT`) nudged left on **desktop only** (`1.3vmax`).
+- **README weight** refreshed (~3.9 MB first paint; ~17 MB repo, ~8 MB of it
+  the base64 `file://` fallbacks a served site never downloads).
 
 ### 2026-07-12 — clean URLs, contact form, audio leveling (deploy pass)
 - **Clean URLs everywhere.** Stripped `.html` from every internal link across
