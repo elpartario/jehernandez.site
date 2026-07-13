@@ -386,15 +386,33 @@ types. Full detail and its knobs are in [8.9](#89-the-background-attractor-morph
   HTML files are empty shells that site.js fills — don't put text in them,
   it would be overwritten.)
 - **"Cuicatl" explainer** (the "?" beside *Cuicatl* on the full-works page):
-  its text is the `CUICATL_TEXT` constant right under `WHY_TEXT` in
-  `js/site.js` (currently set to the same text as the date modal — replace the
-  string when you have real copy). It reuses the same modal styling.
-  **To add another "?" explainer anywhere**: in the HTML, put a
-  `<button class="why-btn" id="myBtn">?</button>` where you want the mark and a
-  `<div class="why-modal" id="myModal"><div class="why-card"></div></div>` shell
-  near the end of the page; then add one line in js/site.js:
-  `wireModal('myBtn', 'myModal', 'your HTML text');`. (The `.why-btn` only shows
-  on inner/overlay pages by design.)
+  its text is the `CUICATL_TEXT` constant right under `WHY_TEXT` in `js/site.js`.
+- **"Website design" explainer** (the "?" in the footer, every page): its text
+  is the `DESIGN_TEXT` constant in `js/site.js` (placeholder for now). The
+  footer button is injected by site.js and its modal is auto-created — nothing
+  per-page.
+- **Adding your own "?" modal (thorough).** All modals share the `.why-modal` /
+  `.why-card` styling and a helper, `wireModal(buttonId, modalId, htmlText)`, so
+  a new one is three small steps:
+  1. **The mark** — put a button where you want the "?" to appear:
+     `<button class="why-btn" id="myBtn" aria-label="What is this?">?</button>`.
+     Put it in a page's HTML, or (to have it on every page) append it inside the
+     menu/footer strings that site.js injects. Note `.why-btn` is styled to show
+     only on inner pages and the overlay (not the black landing) — that's by
+     design; it inherits its size/color from the surrounding text.
+  2. **The text** — add a constant in `js/site.js` next to the others:
+     `const MY_TEXT = \`<p><strong>Title</strong></p><p>…</p>\`;` (plain HTML).
+  3. **Wire it** — one line: `wireModal('myBtn', 'myModal', MY_TEXT);`. You do
+     **not** need to add a modal shell to the HTML — `wireModal` creates the
+     `<div id="myModal" class="why-modal">…</div>` for you if it isn't already
+     there (that's how the footer modal works). If you'd rather place the shell
+     yourself (e.g. a specific spot), add
+     `<div id="myModal" class="why-modal"><div class="why-card"></div></div>`
+     and `wireModal` will fill it instead of creating a new one.
+
+  Every modal then behaves identically: opens on the "?", closes on the ×, on a
+  backdrop click, or Escape; colors follow the theme (§1.3). To restyle *all*
+  modals at once, edit `.why-card` / `.why-modal` in `css/site.css`.
 - **Menu**: **one place** — the `MENU_LINKS` list at the top of `js/site.js`
   (`['label', 'destination']` pairs; a `destination` without `http` is a page
   of this site written as a bare slug — `about`, `work`, `contact` — which
@@ -410,6 +428,11 @@ types. Full detail and its knobs are in [8.9](#89-the-background-attractor-morph
   **one place** — the `WORK_NAV` list in `js/site.js`. The pages carry an empty
   `<p class="worknav"></p>` shell that site.js fills, so those two links (and
   their order/labels) are edited once, not across 16 pages.
+- **Featured-works quick-nav** (top of the full-works page, `flow.html`): the
+  `FEATURED_WORKS` list in `js/site.js` (`[slug, title]` pairs) — it fills the
+  `<nav class="featured-nav">` shell there with jump links to the featured
+  pieces (only those, not the site menu). Add/remove/reorder entries here; each
+  links to `/work/<slug>`.
 - **Contact texts**: `contact.html`. The email that appears (and the
   click-to-copy) is the `data-copy` value on the `.copy-email` span; the form
   is a Web3Forms form — see recipe 1.11.
@@ -864,8 +887,9 @@ defaults; the music adds a wobble on **B** and speeds up the slow phase drift
 (`bg.audioWobble`). The output is intentionally **stretched to the viewport**
 (no aspect correction) so it always fills the page. The dim-red point color is
 in the `fs-bg` fragment shader (§1.3). The type is a **runtime `int` uniform**
-(`uTypeA`/`uTypeB`) — it used to be a compile-time `#define`, but making it a
-uniform is what lets the morph button blend two types (§8.9).
+(`uTypeA`) — it used to be a compile-time `#define`, but making it a uniform is
+what lets the morph button switch types (it "blinks" — fades the field to black,
+swaps the type, and fades back in — §8.9).
 
 **How the attractors actually work (a mini-guide).** Each "type" is a **2-D
 map** — a pair of formulas that take a point `(x, y)` and produce a new point
@@ -1220,6 +1244,13 @@ after the front page: a few KB (everything's cached).
   same corner underneath, but it's hidden behind the overlay then, so they
   don't clash). The icon shows the theme you'd switch *to* (moon = go dark,
   sun = go light).
+- **Nudging the toggle's position**: it's the `#themeT` rule in `css/site.css`
+  — `left` (distance from the left edge; smaller = further left) and `bottom`
+  (distance from the bottom; smaller = lower). The base rule is the **mobile**
+  value (`left: 2.5vmax`); a `@media (min-width: 701px)` block just below sets
+  the **desktop** value (`left: 1.3vmax`), so the two are independent — edit
+  whichever screen you mean. On the landing overlay it shares the bottom-left
+  with the teponaztli, so keep it clear of it there.
 - **Persistence & how the default is applied**: `js/theme-init.js` runs in
   every page's `<head>`, **before first paint** (so there's no flash), and
   decides the theme: it uses the visitor's saved choice from `localStorage`
@@ -1562,12 +1593,30 @@ re-selecting never restarts it), and `selectTrack()` only crossfades gains;
   ```
   "C:\Program Files\Derivative\TouchDesigner\bin\ffmpeg.exe" -i assets\yourtrack.mp3 -af loudnorm=print_format=json -f null -
   ```
+- **Per-track reactivity (`react`)** — each `TRACKS` entry also has a `react`
+  multiplier (`1.0` = full) that scales how much **that track moves the skull /
+  heart** (the mini and preview too). It's independent of loudness (`vol`) and
+  **does not touch the background** — the attractor keeps its own `bg.audioSens`.
+  Current values: loop `1.00`, cicadas `0.75` (~25% calmer), blue14 `0.30`
+  (~70% calmer). A newly added track can set its own `react` to taste. The
+  value is **eased** (via `reactMul` in the render loop) so switching tracks
+  *ramps* the particle response between sensitivities instead of snapping.
 - **Numeral position** — the `#tracks` rule in `index.html`'s `<style>`.
-  `left` sets where the row starts (it clears the teponaztli's width); `gap` is
-  the spacing between numerals; `.tnum` `font-size` is their size; the slide
-  distance is the `translateX(-2.4em)` on `.tnum` (how far left they start, i.e.
-  how far they travel out), and the per-numeral `transition-delay`s are the
-  stagger.
+  `left` sets where the row starts (it clears the teponaztli's width); `.tnum`
+  `font-size` is their size; the slide distance is the `translateX(-2.4em)` on
+  `.tnum` (how far left they start), and the per-numeral `transition-delay`s are
+  the stagger.
+  - **Spacing between numerals** — two vars on `#tracks`: `--gap12` (1→2) and
+    `--gap23` (2→3), split desktop/mobile (base rule = desktop, the
+    `@media (max-width: 700px)` block = mobile). **Desktop is uniform** (both
+    `0.4em` — the tight original look); **mobile is closer and asymmetric**
+    (`1→2` tighter than `2→3`, since numeral 1 is wide). Mobile also shifts the
+    whole row **left toward the teponaztli** via a smaller `left` in that block.
+    (Implemented as `margin-left` on the numerals, so the click targets never
+    overlap.)
+  - **Stacking** — the numeral row is `z-index: 16`, above the attractor square
+    (`#bgBtn`, 15) so it's never hidden by it, but below the teponaztli
+    (`#soundT`, 17) so it still slides out from *behind* the teponaztli.
   - **Vertical position (the important one) — two knobs on `#tracks`.** The row
     is positioned relative to the teponaztli's SVG glyph and there are **two**
     controls; in practice you only ever touch the second one:
@@ -1615,25 +1664,39 @@ the same morph the skull↔heart does.
 - **Cycles** forward through `CFG.bg.typePool` and **loops** — after the last
   pool entry it returns to the first. It starts from whatever attractor loaded
   (the random pick), so the first click advances to the *next* pool member.
-- **Morphs** by blending two attractors in the vertex shader
-  (`uTypeA`→`uTypeB` by `uBgMorph`, eased at `CFG.bg.morphSpeed`); when the
-  morph finishes it settles on the new type, ready for the next click.
-- The preview and the full-screen background share the same type/morph state,
-  so they always match; both react to the music (`bg.audioSens`, §3.5).
+- **Morphs by a blink.** A click **fades the whole background to black**, swaps
+  the shown attractor type **while it's dark** (so the change is never seen as a
+  jump), then **fades back in** on the new shape. So the transition is old shape
+  → black → new shape. It also picks **new random A/B values each morph**, so the
+  same attractor type looks different every time (see `morphSeedRange`).
+- **Fast cycling stays black.** The fade-out (`fadeOutDur`) is quick and the
+  fade-in (`fadeInDur`) is slower; a click while it's still fading back in
+  re-darkens, so rapid clicking keeps the background black (the particles never
+  get time to fade in). It never snaps.
+- The preview and the full-screen background share the same type/brightness/seed
+  state, so they always match; both react to the music (`bg.audioSens`, §3.5).
 
-**How it works (the shader change).** The attractor type used to be baked in at
-compile time (`#define ATTR_TYPE`); it's now a **runtime `int` uniform**, and
-the vertex shader computes the point for *two* types and `mix()`es them — that
-mix is the morph. The big background renders to the blurred low-res buffer as
-always; the button is a separate small WebGL canvas (`#bgPrev`) drawing the
-same attractor **without** the blur. (`fs-bg`'s alpha is now the point mask so
-that preview canvas is transparent behind the points; the main background
-renders to an opaque buffer whose alpha the blit ignores.)
+**How it works (the shader).** The attractor type used to be baked in at compile
+time (`#define ATTR_TYPE`); it's now a **runtime `int` uniform** (`uTypeA`), and
+a uniform `uDim` scales every point's brightness (1 = full, 0 = black) — that
+brightness fade is the whole "blink." JS runs the fade-out/swap/fade-in state
+machine (`bgVis`, `bgFadingOut`), and at full-black it swaps both `uTypeA` **and**
+the per-morph random seed (`bgSeedA`/`bgSeedB`, added to `uA`/`uB`). The big
+background renders to the blurred low-res buffer as always; the button is a
+separate small WebGL canvas (`#bgPrev`) drawing the same attractor **without**
+the blur. (`fs-bg`'s alpha is the point mask so the preview canvas is transparent
+behind the points; the main background renders to an opaque buffer whose alpha
+the blit ignores.)
 
 **Knobs** (all in the `bg` block of `CFG`, `index.html`):
 - `morphButton` — `false` removes the button (background untouched).
 - `btnDelay` — seconds after the heart button before it appears.
-- `morphSpeed` — how fast the background rearranges on click (bigger = faster).
+- `fadeOutDur` — **seconds** to fade to black (the fast half).
+- `fadeInDur` — **seconds** to fade back in (slower; this is what fast clicking
+  interrupts to keep the background black).
+- `morphSeedRange` — how much the A/B attractor parameters are randomized each
+  morph, so the same type varies (`0` = identical shapes every time; `1.6`
+  ≈ noticeably different each click). Also randomized once at page load.
 - `btnCount` / `btnPtSize` — points in the preview and their size.
 - `btnScale` — fits the attractor *inside* the square (bigger = the shape fills
   more of the square; this is not the square's size — that's `--bg-size` below).
@@ -1644,11 +1707,11 @@ renders to an opaque buffer whose alpha the blit ignores.)
 - `typePool` — the set it cycles through (shared with the random picker, §1.6).
 - **The square's on-screen size** — the `--bg-size` custom property on the
   `#bgBtn` rule in `index.html`'s `<style>` (it sets both width and height).
-  It's **split desktop/mobile**: the base `#bgBtn` rule is the mobile size and
-  the `@media (min-width: 701px)` block is the desktop size — edit whichever you
-  mean. Currently ~0.85× the swap button; shrink/grow the `clamp(...)` to taste.
+  It's now a **single value for all screens** (no desktop/mobile split); shrink
+  or grow the `clamp(...)` to taste.
 - **Position** — same `#bgBtn` rule: `left: 50%` + `translateX(-50%)` centers
-  it; `bottom` is also split desktop/mobile exactly like `#swapBtn`.
+  it, and one `bottom` value (again no split) places it — **raise `bottom` to
+  move the square higher.**
 
 ---
 
@@ -1696,6 +1759,73 @@ What's already in place:
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
 
+### 2026-07-13 — attractor morph is now a "blink"
+- **Simplified the background morph to a brightness blink** — a click fades the
+  whole field to black (`uDim` shader uniform), swaps the type + random seed
+  while dark, then fades back in; fast cycling keeps it black, never snaps.
+  Replaced the shaken-loose position machinery (`uLoose`/`uTime`) and its knobs
+  with `fadeOutDur`/`fadeInDur` + `bgVis`/`bgFadingOut`. Kept the per-morph
+  random A/B seeds (`morphSeedRange`).
+- **Morph square** moved higher and **unified** to one `bottom`/`--bg-size` for
+  all screens (dropped the desktop/mobile split).
+- Docs: §3.4, §8.9, this entry.
+
+### 2026-07-13 — "shaken loose" attractor morph + per-morph variety (superseded same day)
+- **Reworked the background morph again** — replaced the central-mass collapse
+  with a **shaken-loose** state: a click scatters every point into free-floating
+  chaos across the whole space (a per-particle lissajous wander on `uTime`, via
+  the `uLoose` shader uniform — no shrink/grow), swaps the type while scattered,
+  then lets them settle. Fast cycling re-scatters before they settle, so they
+  stay loose. New knobs `looseDur`/`settleDur`/`looseSpin` (replaced
+  `gatherDur`/`spreadDur`/`morphGather`); shader dropped `uGather`/`uBlobR`.
+- **Per-morph randomized shape** — each morph picks new random A/B offsets
+  (`bgSeedA`/`bgSeedB`, knob `morphSeedRange`), so the same attractor type looks
+  different every time (and it's randomized once at load too).
+- **Track-switch reactivity ramps** — the per-track `react` is now eased
+  (`reactMul`) so switching tracks glides the skull/heart response instead of
+  snapping to the new sensitivity.
+- **Numerals**: desktop spacing reverted to **uniform/tight** (`--gap12` =
+  `--gap23` = `0.4em`); mobile keeps its asymmetric spacing and now shifts the
+  whole row left toward the teponaztli.
+- Docs: §3.4, §8.8, §8.9 updated; this entry.
+
+### 2026-07-13 — central-mass attractor morph (superseded same day)
+- **Reworked the background morph** to go through a **central mass**: a click
+  gathers all points to center (`uGather` shader uniform), swaps the attractor
+  type at the collapse peak, then spreads them into the new shape — instead of
+  blending two shapes. Fast cycling re-gathers before the spread finishes, so it
+  stays a smooth central blob rather than flashing shapes. New `CFG.bg` knobs
+  `gatherDur` / `spreadDur` / `morphGather` (replaced `morphDur`); the shader
+  dropped `uTypeB`/`uBgMorph` and now computes just one attractor (cheaper).
+- **"website design by ?"** added under **links** in the index overlay (opens the
+  same `DESIGN_TEXT` footer modal via the shared `designBtn`/`wireModal`).
+- Docs: §8.9 and §3.4 updated for the gather morph; this entry.
+
+### 2026-07-13 — morph fix, per-track reactivity, footer modal, mobile tidy
+- **Fixed the attractor morph** (two bugs): the end "snap" (exponential easing
+  was cut at 0.995, never reaching the target) and the fast-cycle "revert" (an
+  interrupted morph hard-landed the target). Now it's a fixed-duration
+  (`CFG.bg.morphDur`) smoothstep morph that reaches the shape exactly, and a
+  mid-morph click continues from where the points are. (`morphSpeed`→`morphDur`.)
+- **Per-track skull/heart reactivity** — each `TRACKS` entry has a `react`
+  multiplier (loop 1.0, cicadas 0.75, blue14 0.30); models only, background
+  untouched. New tracks can set their own.
+- **"Website design" footer modal** — a "?" in the footer on every page,
+  editable via `DESIGN_TEXT` in `js/site.js`. `wireModal()` now **auto-creates**
+  the modal shell, so footer/injected modals need no per-page HTML; §1.7 has a
+  thorough "add your own modal" guide.
+- **Featured-works quick-nav** on `flow.html` — `FEATURED_WORKS` in `js/site.js`
+  fills a `.featured-nav` shell with links to the featured pieces (only those).
+- **Mobile numeral overlap fixed** — attractor square shrunk ~0.8× (both
+  breakpoints), numerals raised to `z-index: 16` (above the square; teponaztli
+  bumped to 17 so they still emerge from behind it), and numeral spacing split
+  into `--gap12`/`--gap23` (1→2 tighter than 2→3; closer on mobile).
+- **Docs**: toggle-position nudge (§8.1), per-track `react` + numeral spacing/z
+  (§8.8), the add-a-modal guide (§1.7), plus this entry.
+- **Bonus**: recreated the raymarched sand-**dunes** shader at
+  `Z:\TouchDesigner\Claude\dunes.glsl` (outside the site folder — for reuse in
+  another project; GLSL-Sandbox compatible).
+
 ### 2026-07-12 — attractor button: soft edges, formulas, guide
 - **Exponential radial edge fade** on the preview square (`exp(−k·r²)` from
   center, via a `vRad` varying + `uEdgeFade` uniform in `fs-bg`), so the square
@@ -1717,7 +1847,7 @@ are grouped summaries; dates before the first tracked day are approximate.
   computes two types and `mix()`es them (`uTypeA`/`uTypeB`/`uBgMorph`). `fs-bg`
   alpha is now the point mask so the preview canvas is transparent (harmless to
   the blurred main background). All existing background behavior is unchanged.
-- New `CFG.bg` knobs: `morphButton`, `morphSpeed`, `btnDelay`, `btnCount`,
+- New `CFG.bg` knobs: `morphButton`, `morphDur`, `btnDelay`, `btnCount`,
   `btnScale`, `btnPtSize`. Button appears `btnDelay` s after the heart button;
   `#bgBtn` is centered with desktop/mobile-split `bottom`/size like `#swapBtn`.
 - Docs: new §8.9 (+ Contents), §1.6 cross-reference, this entry.
