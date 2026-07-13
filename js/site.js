@@ -84,7 +84,7 @@ document.querySelectorAll('nav.menu').forEach(nav => {
 document.querySelectorAll('footer.foot').forEach(f => {
 	f.innerHTML = '<p class="muted">© J.E. Hernández ' + new Date().getFullYear() + ' &nbsp;·&nbsp; ' +
 		FOOTER_LINKS.map(([label, dest]) => linkHTML(label, dest)).join(' &nbsp;·&nbsp; ') +
-		' &nbsp;·&nbsp; Website design info<button class="why-btn" id="designBtn" aria-label="About the website design">?</button>' +
+		' &nbsp;·&nbsp; Website design info <button class="why-btn" id="designBtn" aria-label="About the website design">?</button>' +
 		'</p>';
 });
 
