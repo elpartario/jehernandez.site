@@ -200,25 +200,35 @@
 		position: fixed;
 		/* start just past the teponaztli's right edge (its width = the clamp below) */
 		left: calc(2.5vmax + clamp(64px, 7.5vmax, 110px) + 0.5em);
-		/* --tnum-center = distance from the screen bottom up to the CENTER of the
-		   teponaztli's SVG glyph (NOT counting the bobbing arrow above it). It's
-		   built from the same pieces as the teponaztli, so it tracks every screen
-		   size:
-		     2.5vmax                       the teponaztli's own bottom offset
-		     + 1.4rem                      the caption line ("(audio on/off)") below the glyph
-		     + 0.334 × <teponaztli width>  half the glyph's height (its SVG is
-		                                   382×255, so height ≈ 0.667 × width)
-		   translateY(50%) then parks the numeral row's own center on that line,
-		   so it stays centered no matter the numeral size. ONE knob to move the
-		   numerals up/down: lower --tnum-center percentage to move them UP, raise percentage it for down. */
+		/* --- VERTICAL POSITION OF THE NUMERALS (two knobs) ---
+		   --tnum-center is a fixed anchor: the distance from the screen bottom up
+		   to the CENTER of the teponaztli's SVG glyph (not the bobbing arrow),
+		   built from the same pieces as the teponaztli so it tracks every screen
+		   size: 2.5vmax (its bottom offset) + 1.4rem (the caption line under the
+		   glyph) + 0.334 × <teponaztli width> (half the glyph height; the SVG is
+		   382×255, so height ≈ 0.667 × width).
+
+		   --tnum-shift is the FINE knob you actually tune. It is the translateY
+		   percentage of the row's own height. IMPORTANT DIRECTION:
+		     LOWER the % -> numerals move UP.   RAISE the % -> numerals move DOWN.
+		   (50% sits the row exactly centered on the anchor; 33% lifts it above.)
+		   It is split desktop vs mobile because the numerals size differently on
+		   each — desktop uses the value here, mobile overrides it in the
+		   @media (max-width: 700px) block below. */
 		--tnum-center: calc(2.5vmax + 1.4rem + 0.334 * clamp(64px, 7.5vmax, 110px));
+		--tnum-shift: 33%;           /* DESKTOP: lower % = higher numerals */
 		bottom: var(--tnum-center);
-		transform: translateY(33%);
+		transform: translateY(var(--tnum-shift));
 		z-index: 14;                 /* under the teponaztli (15) so they emerge from behind it */
 		display: flex;
 		align-items: center;
 		gap: clamp(0.35em, 1.2vmax, 0.7em);
 		pointer-events: none;
+	}
+	@media (max-width: 700px) {
+		/* MOBILE numeral height — independent of desktop. Same rule: LOWER % =
+		   higher, RAISE % = lower. Tune this number for phones only. */
+		#tracks { --tnum-shift: 50%; }
 	}
 	.tnum {
 		font-family: 'MayanNumerals', serif;
@@ -250,8 +260,9 @@
 		position: fixed;
 		/* distance from the right edge — SMALLER = sits further right */
 		right: 1.4vmax;
-		/* distance from the bottom of the screen — SMALLER = sits lower.
-		   Nudged right + lower so it lines up better with the teponaztli. */
+		/* distance from the bottom of the screen — SMALLER = sits lower. This is
+		   the MOBILE value; desktop is lowered a bit more in the @media below.
+		   (Split so the two heights are independent — mobile stays put.) */
 		bottom: calc(2.5vmax - 1.5em);
 		z-index: 15;
 		/* --swap-size: the ONE knob to resize the heart/skull button. It is
@@ -272,9 +283,11 @@
 	}
 	body.swap-ready #swapBtn { opacity: 1; pointer-events: auto; }
 	#swapBtn canvas { width: 100%; height: 100%; display: block; }
-	/* no mobile override for #swapBtn: it sits at the same lowered `bottom` as
-	   desktop. (The bottom menu it used to dodge is hidden on the black landing
-	   — it only appears with the overlay, which covers the button anyway.) */
+	@media (min-width: 701px) {
+		/* DESKTOP only: sit the morph button a touch lower (mobile keeps the
+		   base value above). Smaller number = lower. */
+		#swapBtn { bottom: calc(2.5vmax - 2.3em); }
+	}
 
 	/* light/dark toggle: same bottom-left corner as every other page (the
 	   default from site.css). Shown only while the overlay is open — and the
@@ -769,14 +782,15 @@ void main(){
 	   base64 fallback — see DOCUMENTATION §1.1 / §8.8. Each track gets its own
 	   gain node so switching can crossfade between them. */
 	// `vol` = a loudness trim so the three tracks play at a matched level without
-	// re-encoding the files (measured at loop -24.2, cicadas -26.3, blue14 -17.2
-	// LUFS; these bring all three to ~-24). Raise/lower a value to taste; 1.0 = the
-	// file's own level. It scales only the audible gain — the reactivity analyser
-	// auto-gains per band, so loudness and reactivity stay independent.
+	// re-encoding the files. Measured loudness: loop -24.2, cicadas -26.3,
+	// blue14 -17.2 LUFS; these bring all three to a ~-18 LUFS target. Formula for
+	// any track:  vol = 10 ^ ((TARGET_LUFS - TRACK_LUFS) / 20)  (see DOCUMENTATION
+	// §8.8). 1.0 = the file's own level. It scales only the audible gain — the
+	// reactivity analyser auto-gains per band, so loudness stays independent of it.
 	const TRACKS = [
-		{ url: 'assets/loop.mp3',    fb: 'assets/audio.js',   b64: 'AUDIO_B64',   vol: 1.00 },
-		{ url: 'assets/cicadas.mp3', fb: 'assets/cicadas.js', b64: 'CICADAS_B64', vol: 1.28 },
-		{ url: 'assets/blue14.mp3',  fb: 'assets/blue14.js',  b64: 'BLUE14_B64',  vol: 0.44 },
+		{ url: 'assets/loop.mp3',    fb: 'assets/audio.js',   b64: 'AUDIO_B64',   vol: 2.05 },
+		{ url: 'assets/cicadas.mp3', fb: 'assets/cicadas.js', b64: 'CICADAS_B64', vol: 2.61 },
+		{ url: 'assets/blue14.mp3',  fb: 'assets/blue14.js',  b64: 'BLUE14_B64',  vol: 0.91 },
 	];
 
 	function ensureCtx(){
