@@ -17,7 +17,7 @@
 	<nav class="menu"></nav>
 
 	<canvas id="mini" width="104" height="104" data-color="ink" aria-hidden="true"></canvas>
-	<a id="corner" href="index.html" aria-label="Home"></a>
+	<a id="corner" href="/" aria-label="Home"></a>
 
 
 	<main class="sheet">
@@ -32,9 +32,14 @@
 		<p>Film Composition · Commissions · Artistic Direction · Lecturing</p>
 
 		<h2>Let&#8217;s work together</h2>
-		<form class="cform" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
-			<input type="hidden" name="form-name" value="contact">
-			<p style="display:none"><label>Don&#8217;t fill this out: <input name="bot-field"></label></p>
+		<!-- Web3Forms: submissions are emailed to the account tied to access_key.
+		     Change the key or the subject line here; the styling is unchanged. -->
+		<form class="cform" action="https://api.web3forms.com/submit" method="POST">
+			<input type="hidden" name="access_key" value="ff201a86-6bec-4969-9f9c-c3cfc104106e">
+			<input type="hidden" name="subject" value="New message from jehernandez.music">
+			<input type="hidden" name="from_name" value="jehernandez.music">
+			<!-- honeypot: bots fill this hidden field, real people can't see it -->
+			<input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
 			<input type="text" name="name" placeholder="Name" required>
 			<input type="email" name="email" placeholder="Email" required>
 			<textarea name="message" rows="6" placeholder="Your message" required></textarea>
