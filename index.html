@@ -160,7 +160,7 @@
 		position: fixed;
 		left: 2.5vmax;
 		bottom: 2.5vmax;
-		z-index: 15;
+		z-index: 17;   /* above the numerals (16) so they slide out from behind it */
 		width: clamp(64px, 7.5vmax, 110px);
 		background: none;
 		border: none;
@@ -217,18 +217,26 @@
 		   @media (max-width: 700px) block below. */
 		--tnum-center: calc(2.5vmax + 1.4rem + 0.334 * clamp(64px, 7.5vmax, 110px));
 		--tnum-shift: 33%;           /* DESKTOP: lower % = higher numerals */
+		/* spacing between numerals. DESKTOP is uniform + tight (the original look).
+		   MOBILE (below) is closer and makes 1->2 tighter than 2->3. */
+		--gap12: 0.4em;              /* DESKTOP gap between 1 and 2 */
+		--gap23: 0.4em;              /* DESKTOP gap between 2 and 3 (equal = uniform) */
 		bottom: var(--tnum-center);
 		transform: translateY(var(--tnum-shift));
-		z-index: 14;                 /* under the teponaztli (15) so they emerge from behind it */
+		z-index: 16;                 /* above the trig square (15); teponaztli is 17 so they still emerge from behind it */
 		display: flex;
 		align-items: center;
-		gap: clamp(0.35em, 1.2vmax, 0.7em);
 		pointer-events: none;
 	}
 	@media (max-width: 700px) {
 		/* MOBILE numeral height — independent of desktop. Same rule: LOWER % =
 		   higher, RAISE % = lower. Tune this number for phones only. */
-		#tracks { --tnum-shift: 50%; }
+		/* closer spacing on phones, and shift the whole row LEFT toward the
+		   teponaztli (smaller left = further left; they sit behind the tepo at z-16). */
+		#tracks {
+			--tnum-shift: 50%; --gap12: 0.12em; --gap23: 0.34em;
+			left: calc(2.5vmax + clamp(64px, 7.5vmax, 110px) - 0.6em);
+		}
 	}
 	.tnum {
 		font-family: 'MayanNumerals', serif;
@@ -238,11 +246,14 @@
 		background: none;
 		border: none;
 		padding: 0;
+		margin-left: var(--gap23);          /* default = the 2->3 gap */
 		cursor: pointer;
 		opacity: 0;                  /* hidden + tucked left until audio is on */
 		transform: translateX(-2.4em);
 		transition: transform 0.5s ease, opacity 0.4s ease, color 0.15s ease;
 	}
+	.tnum:first-child { margin-left: 0; }               /* numeral 1: no leading gap */
+	.tnum:nth-child(2) { margin-left: var(--gap12); }   /* 1->2 gap (tighter than 2->3) */
 	body.audio-on #tracks { pointer-events: auto; }
 	body.audio-on .tnum { opacity: 0.35; transform: translateX(0); }  /* faded, in place */
 	body.audio-on .tnum.active { opacity: 1; }                        /* selected = lit */
@@ -296,12 +307,13 @@
 	#bgBtn {
 		position: fixed;
 		left: 50%;
-		bottom: calc(2.5vmax - 1.5em);   /* MOBILE bottom (desktop override below) */
+		/* one bottom + one size for ALL screens (no desktop/mobile split).
+		   Raise this value to move the square higher. */
+		bottom: calc(2.5vmax + 1.2em);
 		transform: translateX(-50%);
 		z-index: 15;
-		/* --bg-size = the ONE knob for the square's size (width = height). MOBILE
-		   value; desktop overridden below. ~0.85× the swap button's size. */
-		--bg-size: clamp(82px, 9.6vmax, 140px);
+		/* --bg-size = the ONE knob for the square's size (width = height). */
+		--bg-size: clamp(66px, 7.7vmax, 112px);
 		width: var(--bg-size);
 		height: var(--bg-size);
 		background: none;
@@ -314,10 +326,6 @@
 	}
 	body.bg-ready #bgBtn { opacity: 1; pointer-events: auto; }
 	#bgBtn canvas { width: 100%; height: 100%; display: block; }
-	@media (min-width: 701px) {
-		/* DESKTOP only: match the swap button's lower sit, and its own (smaller) size. */
-		#bgBtn { bottom: calc(2.5vmax - 2.3em); --bg-size: clamp(82px, 9.6vmax, 140px); }
-	}
 
 	/* light/dark toggle: same bottom-left corner as every other page (the
 	   default from site.css). Shown only while the overlay is open — and the
@@ -439,6 +447,7 @@
 			<p><a href="work">My Work</a></p>
 			<p><a href="contact">Contact Me</a></p>
 			<p><a href="https://alkabilmusic.square.site/" target="_blank" rel="noopener">Buy My Music</a></p>
+			<p>website design by <button class="why-btn" id="designBtn" aria-label="About the website design">?</button></p>
 			<p class="muted">© J.E. Hernández <span class="year"></span></p>
 		</div>
 	</div>
@@ -495,8 +504,8 @@ void main(){
 	<!-- ============ strangeTrig background (ported from the .tox) ============ -->
 	<script id="vs-bg" type="x-shader/x-vertex">
 attribute float aId;
-uniform float uA, uB, uC, uD, uPhase, uScale, uPtBg, uBgMorph;
-uniform int uTypeA, uTypeB;   // attractor types being blended (uBgMorph = A->B)
+uniform float uA, uB, uC, uD, uPhase, uScale, uPtBg, uDim;
+uniform int uTypeA;           // the attractor type currently shown
 varying float vB;
 varying float vRad;           // clip-space distance from center (for the preview's edge fade)
 float h(float n){ return fract(sin(n) * 43758.5453); }
@@ -511,8 +520,9 @@ float h(float n){ return fract(sin(n) * 43758.5453); }
      4:  x' = sin(A·y/2 + ph) − cos(B·x/2 + ph) y' = sin(C·x + ph) − cos(D·y + ph)   (·0.5)
      5:  x' = sin(A·y/2 + ph) + C·cos(A·x/2+ph) y' = sin(B·x/2+ph) + D·cos(B·y/2+ph) (·0.5)
      6:  x' = sin(A·x²−B·y² + ph)              y' = cos(C·x·y + D·(x+y) + ph)
-   (Runtime-selected now — was a compile-time #define — so we can morph between
-   two types by mixing their outputs. See DOCUMENTATION §3.4 for the full guide.) */
+   (Runtime-selected via uTypeA. The morph between types is a "blink": uDim fades
+   the whole field to black, the type + its random seed swap while dark, then it
+   fades back in. See DOCUMENTATION §3.4/§8.9.) */
 vec2 iterate(int t, float x, float y, float grp, float ph){
 	for (int i = 0; i < 9; i++){
 		if (float(i) > grp + 1.0) break;
@@ -536,12 +546,12 @@ void main(){
 	float y0 = r * sin(an);
 	float ph = (fract(h(grp + 3.3) + uPhase) * 2.0 - 1.0) * 3.1415926;
 	vec2 p = iterate(uTypeA, x0, y0, grp, ph);
-	if (uBgMorph > 0.0)          // only the morph itself pays for the 2nd attractor
-		p = mix(p, iterate(uTypeB, x0, y0, grp, ph), uBgMorph);
 	// stretched to fill the whole viewport (no aspect correction, on purpose)
 	gl_Position = vec4(p.x * uScale, p.y * uScale, 0.5, 1.0);
 	gl_PointSize = uPtBg;
-	vB = 0.35 + 0.65 * h(aId + 7.7);
+	// uDim is the morph "blink": 1 = full brightness, 0 = black (faded out). The
+	// morph fades the whole field to black, swaps the type, then fades back in.
+	vB = (0.35 + 0.65 * h(aId + 7.7)) * uDim;
 	vRad = length(gl_Position.xy);   // 0 at center -> larger toward the edges
 }
 	</script>
@@ -616,8 +626,12 @@ void main(){
 		      drift: 0.013, audioWobble: 0.3, audioSens: 1.5, blurDiv: 2, blurPx: 1.1,
 		      // --- the attractor MORPH BUTTON (bottom-center preview) ---
 		      morphButton: true,      // false = no attractor morph button at all
-		      morphSpeed: 0.03,       // how fast the background rearranges between types on click
-		      btnDelay: 5,            // seconds AFTER the heart button appears
+		      // morph = a "blink": fade the whole field to black, swap the type +
+		      // seed while dark, then fade back in. Fast cycling keeps it black.
+		      fadeOutDur: 0.22,       // seconds to fade to black (fast); fast cycling keeps it dark
+		      fadeInDur: 0.8,         // seconds to fade back in (slower; cycling interrupts this)
+		      morphSeedRange: 1.6,    // how much A/B are randomized each morph (0 = identical shapes every time)
+		      btnDelay: 10,            // seconds AFTER the heart button appears
 		      btnCount: 14000,        // points in the little preview (fewer = cheaper)
 		      btnScale: 0.72,         // fit the attractor inside the square preview
 		      btnPtSize: 2.0,         // preview point size
@@ -854,10 +868,13 @@ void main(){
 	// any track:  vol = 10 ^ ((TARGET_LUFS - TRACK_LUFS) / 20)  (see DOCUMENTATION
 	// §8.8). 1.0 = the file's own level. It scales only the audible gain — the
 	// reactivity analyser auto-gains per band, so loudness stays independent of it.
+	// `react` = per-track SKULL/HEART reactivity multiplier (1 = full). Only the
+	// models use it; the background reactivity (bg.audioSens) is untouched. Give a
+	// newly added track its own value to tune how much it moves the skull.
 	const TRACKS = [
-		{ url: 'assets/loop.mp3',    fb: 'assets/audio.js',   b64: 'AUDIO_B64',   vol: 2.05 },
-		{ url: 'assets/cicadas.mp3', fb: 'assets/cicadas.js', b64: 'CICADAS_B64', vol: 2.61 },
-		{ url: 'assets/blue14.mp3',  fb: 'assets/blue14.js',  b64: 'BLUE14_B64',  vol: 0.91 },
+		{ url: 'assets/loop.mp3',    fb: 'assets/audio.js',   b64: 'AUDIO_B64',   vol: 2.05, react: 1.00 },
+		{ url: 'assets/cicadas.mp3', fb: 'assets/cicadas.js', b64: 'CICADAS_B64', vol: 2.61, react: 0.75 },
+		{ url: 'assets/blue14.mp3',  fb: 'assets/blue14.js',  b64: 'BLUE14_B64',  vol: 0.91, react: 0.30 },
 	];
 
 	function ensureCtx(){
@@ -1120,19 +1137,27 @@ void main(){
 	let swapTimer = null, wantSwap = false;
 	let spinA = 0, pspinA = 0, beatPhase = 0, beatPush = 0;  // heart spin angles, beat clock, current push
 
-	/* background attractor morph: bgTypeA -> bgTypeB eased by bgMorphT. Clicking
-	   #bgBtn cycles forward through CFG.bg.typePool (looping) and starts a morph. */
-	let bgTypeA = CFG.bg.type, bgTypeB = CFG.bg.type, bgMorphT = 0, bgMorphing = false;
+	/* Background attractor morph by a BLINK: a click fades the whole field to
+	   black (bgVis 1->0), swaps the shown type + its random seed while dark, then
+	   fades back in (bgVis 0->1). Clicking again mid-fade-in re-darkens, so fast
+	   cycling keeps it black. bgVis = brightness; bgFadingOut = which half. */
+	let bgType = CFG.bg.type, bgTarget = CFG.bg.type;
+	let bgVis = 1, bgFadingOut = false, bgActive = false;
+	// per-morph random offsets on A/B, so the same attractor type looks different
+	// every time (applied when the type swaps mid-chaos). Randomized at load too.
+	const randSeed = () => (Math.random() * 2 - 1) * CFG.bg.morphSeedRange;
+	let bgSeedA = randSeed(), bgSeedB = randSeed(), bgSeedNextA = 0, bgSeedNextB = 0;
 	let bgTimer = null, wantBg = false;
 	let bgPoolIdx = Math.max(0, CFG.bg.typePool.indexOf(CFG.bg.type));
 	function cycleBg(){
 		const pool = CFG.bg.typePool;
 		if (!pool.length) return;
-		if (bgMorphing) { bgTypeA = bgTypeB; }   // land any in-flight morph, continue from there
 		bgPoolIdx = (bgPoolIdx + 1) % pool.length;
-		bgTypeB = pool[bgPoolIdx];
-		CFG.bg.type = bgTypeB;
-		bgMorphT = 0; bgMorphing = (bgTypeA !== bgTypeB);
+		bgTarget = pool[bgPoolIdx];
+		CFG.bg.type = bgTarget;
+		bgSeedNextA = randSeed(); bgSeedNextB = randSeed();  // a fresh variant for the next shape
+		bgFadingOut = true;    // (re)fade to black, then fade in bgTarget
+		bgActive = true;
 	}
 	function scheduleBg(ms){
 		if (!bgpgl) return;                      // no button when the feature is off
@@ -1180,6 +1205,7 @@ void main(){
 	/* =================== render loop =================== */
 	let bootT = null, phase = 0, simT = 0, lastT = performance.now();
 	let reactEnv = 0;   // eases reactivity in/out (~1s) when audio is toggled
+	let reactMul = 1;   // eased per-track sensitivity, so switching tracks ramps (no snap)
 
 	function frame(){
 		const now = performance.now();
@@ -1195,8 +1221,13 @@ void main(){
 		const reactOn = running && audioStarted && !muted && actx.state === 'running';
 		reactEnv += ((reactOn ? 1 : 0) - reactEnv) * 0.045;
 		const lv = audioLevels();
-		const push = lv.model * CFG.audioPush * reactEnv;    // skull / heart / mini / preview
-		const pushBg = lv.bg * CFG.audioPush * reactEnv;     // strangeTrig background only
+		// per-track reactivity applies to the MODELS only (skull/heart/mini/preview)
+		// per-track sensitivity, eased toward the active track's value so a track
+		// switch ramps the particle displacement instead of snapping to it
+		const trackReactTarget = (audioStarted && TRACKS[activeTrack]) ? (TRACKS[activeTrack].react ?? 1) : 1;
+		reactMul += (trackReactTarget - reactMul) * 0.05;
+		const push = lv.model * CFG.audioPush * reactEnv * reactMul;   // skull / heart / mini / preview
+		const pushBg = lv.bg * CFG.audioPush * reactEnv;                 // strangeTrig background (untouched)
 
 		if (running) {
 			simT += dt;
@@ -1209,10 +1240,19 @@ void main(){
 			if (morphT < 0.0005) morphT = 0; else if (morphT > 0.9995) morphT = 1;
 			if (wantSwap && heartN){ document.body.classList.add('swap-ready'); wantSwap = false; }
 
-			// background attractor morph: ease A->B, then settle onto B (ready for next)
-			if (bgMorphing){
-				bgMorphT += (1 - bgMorphT) * CFG.bg.morphSpeed;
-				if (bgMorphT > 0.995){ bgTypeA = bgTypeB; bgMorphT = 0; bgMorphing = false; }
+			// background attractor morph: fade to black -> swap type (+ seed) -> fade in
+			if (bgActive){
+				if (bgFadingOut){
+					bgVis -= dt / CFG.bg.fadeOutDur;
+					if (bgVis <= 0){                   // fully black: swap shape + seed, now hidden
+						bgVis = 0; bgType = bgTarget;
+						bgSeedA = bgSeedNextA; bgSeedB = bgSeedNextB;
+						bgFadingOut = false;
+					}
+				} else {
+					bgVis += dt / CFG.bg.fadeInDur;
+					if (bgVis >= 1){ bgVis = 1; bgActive = false; }
+				}
 			}
 			if (wantBg){ document.body.classList.add('bg-ready'); wantBg = false; }
 			// heart beat = a radial particle pulse. It quickens AND grows as the
@@ -1243,16 +1283,16 @@ void main(){
 				gl.bindBuffer(gl.ARRAY_BUFFER, bgBuf);
 				gl.enableVertexAttribArray(0);
 				gl.vertexAttribPointer(0, 1, gl.FLOAT, false, 0, 0);
-				gl.uniform1f(U(bgP, 'uA'), CFG.bg.A0 + (sm.x - 0.5) * CFG.bg.ARange);
-				gl.uniform1f(U(bgP, 'uB'), CFG.bg.B0 + (sm.y - 0.5) * CFG.bg.BRange + pushBg * CFG.bg.audioWobble);
+				gl.uniform1f(U(bgP, 'uA'), CFG.bg.A0 + (sm.x - 0.5) * CFG.bg.ARange + bgSeedA);
+				gl.uniform1f(U(bgP, 'uB'), CFG.bg.B0 + (sm.y - 0.5) * CFG.bg.BRange + pushBg * CFG.bg.audioWobble + bgSeedB);
 				gl.uniform1f(U(bgP, 'uC'), CFG.bg.C0);
 				gl.uniform1f(U(bgP, 'uD'), CFG.bg.D0);
 				gl.uniform1f(U(bgP, 'uPhase'), phase);
 				gl.uniform1f(U(bgP, 'uScale'), CFG.bg.scale);
 				gl.uniform1f(U(bgP, 'uPtBg'), CFG.bg.ptSize);
-				gl.uniform1i(U(bgP, 'uTypeA'), bgTypeA);
-				gl.uniform1i(U(bgP, 'uTypeB'), bgTypeB);
-				gl.uniform1f(U(bgP, 'uBgMorph'), bgMorphT);
+				gl.uniform1i(U(bgP, 'uTypeA'), bgType);
+				// uDim = brightness blink: 1 (full) -> 0 (black), smoothstepped
+				gl.uniform1f(U(bgP, 'uDim'), bgVis * bgVis * (3 - 2 * bgVis));
 				gl.uniform1f(U(bgP, 'uEdgeFade'), 0.0);   // full-screen bg is never edge-faded
 				gl.enable(gl.BLEND);
 				gl.blendFunc(gl.ONE, gl.ONE);
@@ -1402,16 +1442,15 @@ void main(){
 			bgpgl.bindBuffer(bgpgl.ARRAY_BUFFER, bgPrevBuf);
 			bgpgl.enableVertexAttribArray(0);
 			bgpgl.vertexAttribPointer(0, 1, bgpgl.FLOAT, false, 0, 0);
-			bgpgl.uniform1f(BU('uA'), CFG.bg.A0 + (sm.x - 0.5) * CFG.bg.ARange);
-			bgpgl.uniform1f(BU('uB'), CFG.bg.B0 + (sm.y - 0.5) * CFG.bg.BRange + pushBg * CFG.bg.audioWobble);
+			bgpgl.uniform1f(BU('uA'), CFG.bg.A0 + (sm.x - 0.5) * CFG.bg.ARange + bgSeedA);
+			bgpgl.uniform1f(BU('uB'), CFG.bg.B0 + (sm.y - 0.5) * CFG.bg.BRange + pushBg * CFG.bg.audioWobble + bgSeedB);
 			bgpgl.uniform1f(BU('uC'), CFG.bg.C0);
 			bgpgl.uniform1f(BU('uD'), CFG.bg.D0);
 			bgpgl.uniform1f(BU('uPhase'), phase);
 			bgpgl.uniform1f(BU('uScale'), CFG.bg.btnScale);
 			bgpgl.uniform1f(BU('uPtBg'), CFG.bg.btnPtSize);
-			bgpgl.uniform1i(BU('uTypeA'), bgTypeA);
-			bgpgl.uniform1i(BU('uTypeB'), bgTypeB);
-			bgpgl.uniform1f(BU('uBgMorph'), bgMorphT);
+			bgpgl.uniform1i(BU('uTypeA'), bgType);
+			bgpgl.uniform1f(BU('uDim'), bgVis * bgVis * (3 - 2 * bgVis));
 			bgpgl.uniform1f(BU('uEdgeFade'), CFG.bg.btnEdgeBlur ? CFG.bg.btnEdgeAmount : 0.0);
 			bgpgl.enable(bgpgl.BLEND);
 			bgpgl.blendFunc(bgpgl.ONE, bgpgl.ONE);
