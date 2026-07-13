@@ -334,56 +334,56 @@
 			<!-- portfolio: same embeds, same order, as the .music home page -->
 			<div class="portfolio">
 				<div class="pitem">
-				<p class="ptitle"><a href="work/voces-fantasmas.html">Voces Fantasmas (excerpt)</a></p>
+				<p class="ptitle"><a href="/work/voces-fantasmas">Voces Fantasmas (excerpt)</a></p>
 				<iframe class="video" loading="lazy" title="Voces Fantasmas excerpt" src="https://player.vimeo.com/video/668698189?h=37551d117a&amp;app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="work/desert-shelter.html">Desert Shelter (excerpt)</a></p>
+				<p class="ptitle"><a href="/work/desert-shelter">Desert Shelter (excerpt)</a></p>
 				<iframe class="video" loading="lazy" title="Desert Shelter excerpt" src="https://player.vimeo.com/video/819247136?h=ae5a2ee279&amp;app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="work/mechanisms.html">Mechanisms — &#8220;Something&#8217;s Wrong With Roe&#8221; (excerpt)</a></p>
+				<p class="ptitle"><a href="/work/mechanisms">Mechanisms — &#8220;Something&#8217;s Wrong With Roe&#8221; (excerpt)</a></p>
 				<iframe class="video" loading="lazy" title="Mechanisms excerpt" src="https://player.vimeo.com/video/973614960?app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="work/parallax.html">Parallax (or 33,000 Stolen Sunsets)</a></p>
+				<p class="ptitle"><a href="/work/parallax">Parallax (or 33,000 Stolen Sunsets)</a></p>
 				<iframe loading="lazy" style="height:300px" title="Parallax on SoundCloud" src="https://w.soundcloud.com/player/?visual=true&amp;url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F2350663022&amp;show_artwork=true"></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="work/the-pontar-river.html">The Pontar River</a></p>
+				<p class="ptitle"><a href="/work/the-pontar-river">The Pontar River</a></p>
 				<iframe class="video" loading="lazy" title="The Pontar River" src="https://www.youtube.com/embed/LjQBfchVVV4" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="work/double-refraction.html">Double Refraction (excerpt)</a></p>
+				<p class="ptitle"><a href="/work/double-refraction">Double Refraction (excerpt)</a></p>
 				<iframe class="video" loading="lazy" title="Double Refraction excerpt" src="https://player.vimeo.com/video/818229192?h=a0d14bbf1c&amp;app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="work/soul-echoes.html">Soul Echoes — &#8220;blood&#8221; (excerpt)</a></p>
+				<p class="ptitle"><a href="/work/soul-echoes">Soul Echoes — &#8220;blood&#8221; (excerpt)</a></p>
 				<iframe class="video" loading="lazy" title="Soul Echoes excerpt" src="https://player.vimeo.com/video/960925135?app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="work/helah.html">Helah (excerpt)</a></p>
+				<p class="ptitle"><a href="/work/helah">Helah (excerpt)</a></p>
 				<iframe class="video" loading="lazy" title="Helah excerpt" src="https://player.vimeo.com/video/850743444?app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="flow.html#vocal">Imagine This Ruin — First Glimpse 2022</a></p>
+				<p class="ptitle"><a href="/flow#vocal">Imagine This Ruin — First Glimpse 2022</a></p>
 				<iframe class="video" loading="lazy" title="Imagine This Ruin" src="https://player.vimeo.com/video/754052023?h=3e4fcb7fa0&amp;app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="work/seis-bagatelas.html">Seis Bagatelas (Owl Bagatelles)</a></p>
+				<p class="ptitle"><a href="/work/seis-bagatelas">Seis Bagatelas (Owl Bagatelles)</a></p>
 				<iframe loading="lazy" style="height:300px" title="Seis Bagatelas on SoundCloud" src="https://w.soundcloud.com/player/?visual=true&amp;url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F945079717&amp;show_artwork=true"></iframe>
 				</div>
 
-				<p class="pwide"><a href="work.html">featured work</a> &nbsp;·&nbsp; <a href="flow.html">full list of works</a></p>
+				<p class="pwide"><a href="/work">featured work</a> &nbsp;·&nbsp; <a href="/flow">full list of works</a></p>
 			</div>
 
 			<h2>links</h2>
@@ -768,10 +768,15 @@ void main(){
 	   To swap a track, replace its .mp3 (keep the name) and regenerate its
 	   base64 fallback — see DOCUMENTATION §1.1 / §8.8. Each track gets its own
 	   gain node so switching can crossfade between them. */
+	// `vol` = a loudness trim so the three tracks play at a matched level without
+	// re-encoding the files (measured at loop -24.2, cicadas -26.3, blue14 -17.2
+	// LUFS; these bring all three to ~-24). Raise/lower a value to taste; 1.0 = the
+	// file's own level. It scales only the audible gain — the reactivity analyser
+	// auto-gains per band, so loudness and reactivity stay independent.
 	const TRACKS = [
-		{ url: 'assets/loop.mp3',    fb: 'assets/audio.js',   b64: 'AUDIO_B64' },
-		{ url: 'assets/cicadas.mp3', fb: 'assets/cicadas.js', b64: 'CICADAS_B64' },
-		{ url: 'assets/blue14.mp3',  fb: 'assets/blue14.js',  b64: 'BLUE14_B64' },
+		{ url: 'assets/loop.mp3',    fb: 'assets/audio.js',   b64: 'AUDIO_B64',   vol: 1.00 },
+		{ url: 'assets/cicadas.mp3', fb: 'assets/cicadas.js', b64: 'CICADAS_B64', vol: 1.28 },
+		{ url: 'assets/blue14.mp3',  fb: 'assets/blue14.js',  b64: 'BLUE14_B64',  vol: 0.44 },
 	];
 
 	function ensureCtx(){
@@ -786,7 +791,7 @@ void main(){
 		outGain.connect(actx.destination);
 		TRACKS.forEach((t, i) => {            // one gain per track for crossfading
 			t.gain = actx.createGain();
-			t.gain.gain.value = i === activeTrack ? 1 : 0;
+			t.gain.gain.value = i === activeTrack ? t.vol : 0;   // active at its loudness trim
 			t.gain.connect(analyser);         // analysis taps here (pre-master-mute)
 			t.gain.connect(outGain);
 			t.buf = null; t.timer = null; t.nextPass = 0; t.loading = null;
@@ -870,7 +875,7 @@ void main(){
 			const now = actx.currentTime;
 			TRACKS.forEach((t, k) => {
 				if (!t.gain) return;
-				const target = k === i ? 1 : 0;
+				const target = k === i ? t.vol : 0;   // selected plays at its loudness trim
 				t.gain.gain.cancelScheduledValues(now);
 				t.gain.gain.setValueAtTime(t.gain.gain.value, now);
 				t.gain.gain.linearRampToValueAtTime(target, now + CFG.audioFade);
