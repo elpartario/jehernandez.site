@@ -35,11 +35,11 @@ document.querySelectorAll('.year').forEach(el => { el.textContent = new Date().g
    (BASE handles the work/ subfolder); full URLs open in a new tab. */
 const MENU_LINKS = [
 	['home', 'index.html'],
-	['about', 'about.html'],
-	['work', 'work.html'],
+	['about', 'about'],
+	['work', 'work'],
 	['writing', 'https://jehernandez.substack.com'],
 	['store', 'https://alkabilmusic.square.site/'],
-	['contact', 'contact.html'],
+	['contact', 'contact'],
 ];
 /* icon links rendered after the text links (inline SVG, add more if needed) */
 const MENU_ICONS = [
