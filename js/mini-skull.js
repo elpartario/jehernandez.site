@@ -1,7 +1,7 @@
 /* Mini 3D coyote skull for the top-right corner of inner pages.
  * Self-contained: own WebGL context, loads assets/skull.bin (already
  * browser-cached after visiting the front page), follows the mouse.
- * The <a id="corner"> on top of it links back to index.html.
+ * The <a id="corner"> on top of it links back to the homepage ("/").
  * Orientation comes from js/skull-rot.js (window.SKULL_ROT).
  * Color follows the page text color (--ink), so it stays visible when
  * the light/dark toggle flips the theme. */
