@@ -229,7 +229,7 @@ a#corner {
 
 #themeT {
 	position: fixed;
-	left: 2.5vmax;
+	left: 2.5vmax;              /* mobile / base; desktop nudges left in the @media below */
 	bottom: 2.5vmax;
 	z-index: 40;
 	width: 34px;
@@ -255,6 +255,9 @@ a#corner {
 #themeT .moon { opacity: 1; transform: rotate(0deg) scale(1); }
 html.dark #themeT .sun  { opacity: 1; transform: rotate(0deg) scale(1); }
 html.dark #themeT .moon { opacity: 0; transform: rotate(90deg) scale(0.6); }
+/* desktop only: nudge the toggle a little further left (smaller = closer to
+   the edge). Mobile keeps the 2.5vmax above. */
+@media (min-width: 701px) { #themeT { left: 1.3vmax; } }
 
 /* ============ "why this date" modal ============ */
 
