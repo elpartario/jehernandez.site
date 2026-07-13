@@ -34,7 +34,7 @@ document.querySelectorAll('.year').forEach(el => { el.textContent = new Date().g
    [label, destination]. Destinations without "http" are pages of this site
    (BASE handles the work/ subfolder); full URLs open in a new tab. */
 const MENU_LINKS = [
-	['home', 'index.html'],
+	['home', '/'],
 	['about', 'about'],
 	['work', 'work'],
 	['writing', 'https://jehernandez.substack.com'],
@@ -57,10 +57,23 @@ const FOOTER_LINKS = [
 	['Buy My Music', 'https://alkabilmusic.square.site/'],
 ];
 
+/* Turn a [label, dest] pair into an <a>. Rules for `dest`:
+     - starts with "http"  -> external link, opens in a new tab.
+     - a page slug          -> served CLEAN and root-absolute, e.g. "about"
+                               becomes href="/about", "work" -> "/work".
+     - the HOMEPAGE          -> use "/" (an empty string "" or "index.html" also
+                               work). All three produce href="/" — the clean home.
+   Because the paths are root-absolute (/about, /work/...), the same link works
+   from any folder depth, so there is no per-page or "../" bookkeeping. */
+function cleanHref(dest) {
+	if (dest.startsWith('http')) return dest;
+	let slug = dest.replace(/\.html$/, '').replace(/^\/+/, '');   // drop .html + leading /
+	return (slug === '' || slug === 'index') ? '/' : '/' + slug;  // "", "/", "index.html" -> "/"
+}
 function linkHTML(label, dest) {
 	return dest.startsWith('http')
 		? '<a href="' + dest + '" target="_blank" rel="noopener">' + label + '</a>'
-		: '<a href="' + BASE + dest + '">' + label + '</a>';
+		: '<a href="' + cleanHref(dest) + '">' + label + '</a>';
 }
 document.querySelectorAll('nav.menu').forEach(nav => {
 	nav.innerHTML =
@@ -71,6 +84,18 @@ document.querySelectorAll('nav.menu').forEach(nav => {
 document.querySelectorAll('footer.foot').forEach(f => {
 	f.innerHTML = '<p class="muted">© J.E. Hernández ' + new Date().getFullYear() + ' &nbsp;·&nbsp; ' +
 		FOOTER_LINKS.map(([label, dest]) => linkHTML(label, dest)).join(' &nbsp;·&nbsp; ') + '</p>';
+});
+
+/* ============ WORK-PAGE NAV — EDIT ONCE, CHANGES ON EVERY WORK PAGE ============
+   Fills the <p class="worknav"></p> shell at the bottom of each work page, so
+   the "featured work / full list of works" links live in one place instead of
+   being copied into all 16 pages. Same [label, dest] rules as the menu. */
+const WORK_NAV = [
+	['← featured work', 'work'],
+	['full list of works', 'flow'],
+];
+document.querySelectorAll('.worknav').forEach(el => {
+	el.innerHTML = WORK_NAV.map(([label, dest]) => linkHTML(label, dest)).join(' &nbsp;·&nbsp; ');
 });
 
 /* ============ LIGHT / DARK THEME ============
