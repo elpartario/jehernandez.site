@@ -16,6 +16,8 @@ The [README](README.md) is the short version; this is the complete one.
    - [1.8 Deploy and local preview](#18-deploy-and-local-preview)
    - [1.9 URL parity with the old site](#19-url-parity-with-the-old-site)
    - [1.10 Writing HTML here: a mini style guide](#110-writing-html-here-a-mini-style-guide)
+   - [1.11 Clean URLs, linking, and the homepage link](#111-clean-urls-linking-between-pages-and-the-homepage-link)
+   - [1.12 The contact form (Web3Forms)](#112-the-contact-form-web3forms)
 2. [How the site is organized](#2-how-the-site-is-organized)
 3. [The front page, piece by piece](#3-the-front-page-piece-by-piece)
    - [3.1 The entry flow](#31-the-entry-flow)
@@ -389,15 +391,23 @@ from [0,1,3, 6])`.
   `wireModal('myBtn', 'myModal', 'your HTML text');`. (The `.why-btn` only shows
   on inner/overlay pages by design.)
 - **Menu**: **one place** — the `MENU_LINKS` list at the top of `js/site.js`
-  (`['label', 'destination']` pairs; destinations without `http` are pages of
-  this site, full URLs open in a new tab). Icons after the links live in
-  `MENU_ICONS` (inline SVG). The `<nav class="menu">` tags in the HTML files
-  are empty shells that site.js fills on every page, at both folder depths —
-  never put links in them directly.
+  (`['label', 'destination']` pairs; a `destination` without `http` is a page
+  of this site written as a bare slug — `about`, `work`, `contact` — which
+  becomes a clean root-absolute link `/about`, `/work`, `/contact`; use `/`
+  for the homepage; full URLs open in a new tab — see recipe 1.11). Icons after
+  the links live in `MENU_ICONS` (inline SVG). The `<nav class="menu">` tags in
+  the HTML files are empty shells that site.js fills on every page, at both
+  folder depths — never put links in them directly.
 - **Footer**: **one place** — the `FOOTER_LINKS` list right below the menu in
   `js/site.js`, same rules. The © year updates itself. The
   `<footer class="foot">` tags in the pages are empty shells too.
-- **Contact texts**: `contact.html`.
+- **"featured work / full list of works" line** (bottom of every work page):
+  **one place** — the `WORK_NAV` list in `js/site.js`. The pages carry an empty
+  `<p class="worknav"></p>` shell that site.js fills, so those two links (and
+  their order/labels) are edited once, not across 16 pages.
+- **Contact texts**: `contact.html`. The email that appears (and the
+  click-to-copy) is the `data-copy` value on the `.copy-email` span; the form
+  is a Web3Forms form — see recipe 1.11.
 
 ### 1.8 Deploy and local preview
 
@@ -460,11 +470,12 @@ closing the browser tab does **not** stop it. To shut it down:
   `assets/audio.js`) so everything — including audio reactivity — still runs.
   SoundCloud/Vimeo/YouTube embeds may refuse to load from file://, though —
   judge embeds over http, not from disk.
-- **Deploy on Netlify** (recommended): drag the `jehernandez` folder onto
+- **Deploy on Netlify**: drag the `jehernandez` folder onto
   https://app.netlify.com. Netlify serves `about.html` at `/about` and
-  `work/parallax.html` at `/work/parallax` automatically, applies the
-  `_redirects` file, and activates the contact form (submissions appear under
-  Site → Forms). Custom domain under Domain settings.
+  `work/parallax.html` at `/work/parallax` automatically, and applies the
+  `_redirects` and `_headers` files. Custom domain under Domain settings. (The
+  contact form is Web3Forms now, so it works on any host — Netlify Forms is no
+  longer involved.)
 - **Deploy on GitHub Pages** (works, with three caveats — see below):
 
   1. Create a repository on github.com (any name, e.g. `jehernandez-site`;
@@ -489,7 +500,7 @@ closing the browser tab does **not** stop it. To shut it down:
   |---|---|---|
   | `/about` serves about.html (clean URLs) | automatic | **automatic too** |
   | `_redirects` (`/store` → Square store) | applied | **ignored** — `/store` 404s there |
-  | Contact form | live (Netlify Forms) | **inert** (the click-to-copy email still works) |
+  | Contact form (Web3Forms) | works | works (it's just an HTML POST) |
   | `_headers` (security headers, section 9) | applied | **ignored** |
 
   **Clean URLs work natively on GitHub Pages** — an earlier version of this
@@ -564,6 +575,68 @@ never set colors on individual links.
 `<div class="embed">…</div>`, with `class="video"` on the iframe when it
 should be 16:9 (video) rather than fixed-height (audio players).
 
+### 1.11 Clean URLs, linking between pages, and the homepage link
+
+The live site serves **clean URLs** — no `.html` on the end (`/about`,
+`/work/parallax`, `/flow`). GitHub Pages and Netlify both do this automatically
+(they map `/about` to the file `about.html` for you). So **when you write a
+link, leave the `.html` off**:
+
+| To link to | Write |
+|---|---|
+| the homepage | `href="/"` |
+| a top page | `href="/about"`, `href="/work"`, `href="/contact"`, `href="/flow"` |
+| a work page | `href="/work/parallax"` (the slug is the filename without `.html`) |
+| a spot on the works page | `href="/flow#vocal"` |
+| an external site | `href="https://…" target="_blank" rel="noopener"` |
+
+**Why the leading slash?** A path that starts with `/` is *root-absolute* — it
+means "from the site's root," so the exact same link works whether the page is
+at the top level or inside `/work/`. That's why you don't need `../` anywhere.
+(Assets like CSS/JS/images are the exception — they're real files, still linked
+relatively, and the scripts handle the `../` for the `/work/` folder for you.)
+
+**The homepage link — your question about "leaving it blank."** For any link
+that should go home, use **`href="/"`**. In the `js/site.js` link lists
+(`MENU_LINKS`, `FOOTER_LINKS`, `WORK_NAV`) the destination for home is written
+as `'/'`; an empty string `''` or `'index.html'` also resolve to `/` (the
+`cleanHref()` helper normalizes all three), so "leaving it blank" does work —
+but `'/'` is the clearest and the one to prefer. In hand-written HTML (like the
+corner-skull `<a id="corner" href="/">`), always write `href="/"` — a truly
+empty `href=""` re-loads the *current* page, not the homepage, so don't use
+that.
+
+**One caveat:** because clean URLs need a server that maps them, the pages no
+longer work by **double-clicking the file from disk** (`file://` has no such
+mapping — `/about` won't resolve). Preview with `python -m http.server` or the
+live site instead (the landing page's own graphics still load from disk, but
+navigation links need the server). This is the trade-off for clean URLs and is
+normal.
+
+### 1.12 The contact form (Web3Forms)
+
+The contact form posts to **Web3Forms**, which emails each submission to the
+account tied to an **access key** — no server or backend of your own. In
+`contact.html`:
+
+- The key is `<input type="hidden" name="access_key" value="…">`. To change
+  where mail goes, put your own key here (get one free at web3forms.com by
+  entering the destination email).
+- `name="subject"` sets the email subject line; edit the value to taste.
+- The hidden `botcheck` checkbox is a honeypot (spam bots tick it, real users
+  can't see it) — leave it.
+- The visible fields (`name`, `email`, `message`) and the Send button are
+  unchanged styling (`.cform`); add or rename fields freely — Web3Forms emails
+  whatever fields you include.
+- After sending, Web3Forms shows its own confirmation page. If you'd rather
+  return to your site, add `<input type="hidden" name="redirect" value="https://YOURDOMAIN/">`.
+- **CSP note:** the form's domain is whitelisted in `_headers`
+  (`form-action … https://api.web3forms.com`). If you ever switch form
+  providers, update that line or the submit will be blocked on Netlify.
+
+The click-to-copy email above the form is separate: it's the `data-copy` value
+on the `.copy-email` span in `contact.html`.
+
 ---
 
 ## 2. How the site is organized
@@ -574,7 +647,7 @@ jehernandez/
 ├── about.html            full bio + press             → /about
 ├── work.html             featured works (banners)     → /work
 ├── flow.html             full categorized list        → /flow
-├── contact.html          email + Netlify form         → /contact
+├── contact.html          email + Web3Forms form       → /contact
 ├── work/<slug>.html ×16  one page per piece           → /work/<slug>
 ├── _redirects            Netlify redirects (/store → Square store; Netlify-only)
 ├── _headers              Netlify security headers (CSP etc.; Netlify-only, §9)
@@ -1042,8 +1115,11 @@ after the front page: a few KB (everything's cached).
 - **A YouTube embed shows "Video unavailable"** — that's the video owner
   disallowing embedding (open `https://www.youtube.com/embed/VIDEO_ID`
   directly to confirm — if it's blocked there, no site can embed it).
-- **Contact form does nothing locally** — Netlify forms only work deployed on
-  Netlify.
+- **Contact form** — it posts to Web3Forms and works on any host (local
+  server, GitHub Pages, or Netlify). If submissions don't arrive: confirm the
+  `access_key` in `contact.html` is yours, check the spam folder, and (on
+  Netlify) confirm `_headers` still whitelists `https://api.web3forms.com` in
+  `form-action`. See recipe 1.12.
 - **Everything frozen on the front page** — that's the overlay-open state
   (by design: the scene and music pause behind the main site). Close with the
   corner skull or Escape.
@@ -1446,8 +1522,11 @@ are:
 2. Don't paste third-party `<script src="...">` snippets (analytics, widgets)
    without thinking — that's the one act that can hand your visitors to
    someone else. Everything this site runs is its own code.
-3. Keep the contact form as it is: Netlify Forms handles submissions
-   server-side, nothing on the site stores or re-displays visitor text.
+3. The contact form posts to Web3Forms (a third party) which emails you the
+   submissions; nothing on your site stores or re-displays visitor text, and
+   the only secret involved is the form access key (low-value — it just routes
+   mail to your address, and can be rotated at web3forms.com). Its domain is
+   the one non-`self` entry in the CSP's `form-action`/`connect-src`.
 
 What's already in place:
 
@@ -1472,6 +1551,28 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-12 — clean URLs, contact form, audio leveling (deploy pass)
+- **Clean URLs everywhere.** Stripped `.html` from every internal link across
+  all 21 pages (portfolio, work-page back-links, sibling links, jump anchors),
+  and switched navigation to **root-absolute** clean paths (`/about`, `/work`,
+  `/work/<slug>`, `/flow#vocal`) so a link works from any folder depth without
+  `../`. Documented the convention in the new **§1.11**.
+- **Homepage links → `/`.** Every "home" link (the corner skulls on inner
+  pages, the menu's home item) now points at `/`. In `js/site.js` a new
+  `cleanHref()` normalizes `'/'`, `''`, and `'index.html'` all to `/`.
+- **"featured work / full list" line is now injected** from a single `WORK_NAV`
+  list in `js/site.js` into a `<p class="worknav">` shell on each work page —
+  no more editing that line in 16 files. (New `.worknav` margin in site.css.)
+- **Contact form → Web3Forms** (`contact.html`): posts to
+  `api.web3forms.com` with the access key, honeypot kept, styling unchanged;
+  works on any host (no more Netlify Forms dependency). Whitelisted the domain
+  in the `_headers` CSP (`form-action`/`connect-src`). New **§1.12**.
+- **Audio loudness matched** without re-encoding: a per-track `vol` trim in the
+  `TRACKS` array (loop 1.00, cicadas 1.28, blue14 0.44) brings all three to
+  ≈−24 LUFS; applied in the crossfade gains, independent of reactivity.
+- Docs: added §1.11 + §1.12 (and to the Contents), refreshed every stale
+  Netlify-Forms mention (§1.7, §1.8, §2 tree, §7, §9), and this entry.
 
 ### 2026-07-12 — multi-track audio, numerals, polish
 - **Audio: three soundtracks + Mayan-numeral selector (§8.8).**
