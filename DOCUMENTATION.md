@@ -750,11 +750,23 @@ heart). The overlay page is **not red** — it takes the current theme
 
    **The heart surprise fits into this state.** A few seconds after the hints
    clear (`CFG.heart.appearAfter`, default 5s), a small particle **heart button
-   fades in bottom-right** (`body.swap-ready`). Clicking it morphs the skull's
+   fades in bottom-right** (`body.swap-ready`), and an arrow also appears as 
+   in the teponaztli hint. Clicking it morphs the skull's
    particles into the heart and back; the heart rotates and beats on its own
    and is itself clickable to enter the site. It's a landing-only flourish —
    full detail and all its knobs are in [8.7](#87-the-heart-surprise-skull--heart-morph).
    Set `CFG.heart.enabled: false` to remove it entirely.
+
+   **One more morph block appears.** A few seconds after the heart morph block 
+   appears, a second morph block appears that let's the user change the background
+   trigonometric attractor index (and an arrow also appears as in the teponaztli 
+   hint as well). The morph block is a faithful representation of the backgrouynd, 
+   except contained within a square. After the random attractor loads on first 
+   visit, the morph block will cycle forward through the index, but this time 
+   it gives a random seed to the attractors so that they load on different spaces. 
+   The cycling makes the background blink (fade the particles in and out), for 
+   an elegant changeover. If cycling is fast, the screen remains in the blackened
+   state.
 2. **First skull (or heart) click** (`body.entered`) — the overlay opens *and*
    the site chrome is revealed: the **mini corner skull** fades in top-right
    (it persists from now on, the way back), and the **menu**, **theme toggle**,
