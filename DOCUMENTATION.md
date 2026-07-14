@@ -42,6 +42,7 @@ The [README](README.md) is the short version; this is the complete one.
    - [8.7 The heart surprise (skull ↔ heart morph)](#87-the-heart-surprise-skull--heart-morph)
    - [8.8 The audio: three tracks + the Mayan-numeral selector](#88-the-audio-three-tracks--the-mayan-numeral-selector)
    - [8.9 The background-attractor morph button](#89-the-background-attractor-morph-button-bottom-center)
+   - [8.10 The frozen-background backdrop (inner pages)](#810-the-frozen-background-backdrop-inner-pages)
 9. [Security notes](#9-security-notes)
 10. [Changelog](#10-changelog)
 
@@ -428,11 +429,8 @@ types. Full detail and its knobs are in [8.9](#89-the-background-attractor-morph
   **one place** — the `WORK_NAV` list in `js/site.js`. The pages carry an empty
   `<p class="worknav"></p>` shell that site.js fills, so those two links (and
   their order/labels) are edited once, not across 16 pages.
-- **Featured-works quick-nav** (top of the full-works page, `flow.html`): the
-  `FEATURED_WORKS` list in `js/site.js` (`[slug, title]` pairs) — it fills the
-  `<nav class="featured-nav">` shell there with jump links to the featured
-  pieces (only those, not the site menu). Add/remove/reorder entries here; each
-  links to `/work/<slug>`.
+- **"← featured works" link** at the bottom of the full-works page
+  (`flow.html`): a plain static link near the end of that file, back to `/work`.
 - **Contact texts**: `contact.html`. The email that appears (and the
   click-to-copy) is the `data-copy` value on the `.copy-email` span; the form
   is a Web3Forms form — see recipe 1.11.
@@ -1593,19 +1591,44 @@ re-selecting never restarts it), and `selectTrack()` only crossfades gains;
   ```
   "C:\Program Files\Derivative\TouchDesigner\bin\ffmpeg.exe" -i assets\yourtrack.mp3 -af loudnorm=print_format=json -f null -
   ```
-- **Per-track reactivity (`react`)** — each `TRACKS` entry also has a `react`
-  multiplier (`1.0` = full) that scales how much **that track moves the skull /
-  heart** (the mini and preview too). It's independent of loudness (`vol`) and
-  **does not touch the background** — the attractor keeps its own `bg.audioSens`.
-  Current values: loop `1.00`, cicadas `0.75` (~25% calmer), blue14 `0.30`
-  (~70% calmer). A newly added track can set its own `react` to taste. The
-  value is **eased** (via `reactMul` in the render loop) so switching tracks
-  *ramps* the particle response between sensitivities instead of snapping.
-- **Numeral position** — the `#tracks` rule in `index.html`'s `<style>`.
-  `left` sets where the row starts (it clears the teponaztli's width); `.tnum`
-  `font-size` is their size; the slide distance is the `translateX(-2.4em)` on
-  `.tnum` (how far left they start), and the per-numeral `transition-delay`s are
-  the stagger.
+- **Per-track reactivity (`react` + `w`)** — each `TRACKS` entry carries two
+  tuning knobs for how it drives the **skull / heart** (mini + preview too;
+  the background is **not** affected — it keeps its own `bg.audioSens`):
+  - **`react`** — overall sensitivity multiplier (`1.0` = full). Current: loop
+    `1.00`, cicadas `1.00`, blue14 `0.55` (blue14 is loud + bass-heavy, so it's
+    dialed back). It's **eased** via `reactMul` in the render loop, so switching
+    tracks *ramps* the response instead of snapping.
+  - **`w: [low, mid, high]`** — the **FFT band weights**: how much each of the
+    three frequency bands drives the particles, tuned to where that track is
+    actually active (measured by RMS energy). loop `[0.45, 0.40, 0.15]`
+    (mid-forward musical mix), cicadas `[0.12, 0.78, 0.10]` (its energy is almost
+    all midrange — weighting mid avoids the near-silent low/high auto-gaining up
+    into jitter), blue14 `[0.72, 0.23, 0.05]` (bass-heavy — the low band carries
+    the movement). Raising a band's weight makes the particles follow that part
+    of the spectrum more; the three are normalized, so only their ratio matters.
+  - **To tune a NEW track:** play it and watch the skull. If it barely moves,
+    raise `react`; if it's frantic/noisy, lower it. If the motion feels tied to
+    the wrong part of the sound, shift `w` toward the band you hear driving it
+    (kick/bass = low `[0]`, vocals/melody = mid `[1]`, cymbals/air = high `[2]`).
+    To measure a track's band energy the way these were set, run:
+    `ffmpeg -i track.mp3 -af "lowpass=f=250,astats" -f null -` (and again with
+    `highpass=f=250,lowpass=f=4000` for mid, `highpass=f=4000` for high) and
+    compare the **RMS level dB** — the loudest band is the one to weight.
+- **Editing the Mayan numerals — quick reference.** Everything is in the
+  `#tracks` and `.tnum` rules in `index.html`'s `<style>` block. At a glance:
+
+  | To change… | Edit | Notes |
+  |---|---|---|
+  | how far right the row sits | `#tracks` `left` | bigger = further right; mobile has its own smaller `left` |
+  | height / vertical position | `#tracks` `--tnum-shift` | **lower % = higher, higher % = lower**; desktop + mobile split |
+  | gap 1→2 and 2→3 | `#tracks` `--gap12` / `--gap23` | desktop uniform `0.4em`; mobile closer + asymmetric |
+  | numeral size | `.tnum` `font-size` | a `clamp()` — scales with screen |
+  | color (rest / hover) | `.tnum` `color` / `.tnum:hover` | uses the theme accent vars |
+  | slide-in distance | `.tnum` `translateX(-2.4em)` | how far left they start (hidden behind the tepo) |
+  | slide-in stagger | `.tnum:nth-child()` `transition-delay` | when each numeral appears |
+  | which glyphs | the `&#x1D2E1;`–`&#x1D2E3;` in the `#tracks` HTML | real Unicode Mayan numerals |
+
+  The rest of this list explains each in more depth.
   - **Spacing between numerals** — two vars on `#tracks`: `--gap12` (1→2) and
     `--gap23` (2→3), split desktop/mobile (base rule = desktop, the
     `@media (max-width: 700px)` block = mobile). **Desktop is uniform** (both
@@ -1713,6 +1736,40 @@ the blit ignores.)
   it, and one `bottom` value (again no split) places it — **raise `bottom` to
   move the square higher.**
 
+### 8.10 The frozen-background backdrop (inner pages)
+
+The inner pages (`about`, `work`, `flow`, `contact`, the piece pages) can show
+the **same frozen scene** the visitor left behind on the landing, tinted like
+the canvas-index overlay — so the whole site feels like one continuous surface.
+
+**How it works.**
+1. On `index.html`, the main WebGL context is created with
+   `preserveDrawingBuffer: true` so its pixels can be read back after a render.
+2. Each time the overlay opens (`setOverlay(true)` → `captureBackground()`), the
+   frozen canvas is drawn onto a small 2-D canvas (long edge capped at
+   **1280 px**), exported as a **JPEG** (`toDataURL('image/jpeg', 0.6)`), and
+   saved in **`sessionStorage['bgShot']`**. It refreshes every time the overlay
+   opens, so it's always the latest frozen frame.
+3. On every inner page, `js/site.js` reads `bgShot`; if present it injects a
+   fixed full-bleed `#pageBgShot` div with that image and adds `.has-bgshot` to
+   `<body>`. CSS then paints the shot at the back (`z-index: -2`) with a tint
+   layer over it (`::before`, `z-index: -1`) at **the same opacity as the
+   landing overlay** — `rgba(var(--color-overlay), 0.86)` — so the page content
+   reads exactly like the index overlay.
+
+**Notes / knobs.**
+- **No shot yet** (visitor opened an inner page directly, before ever entering
+  the landing) → `.has-bgshot` isn't added and the page falls back to the solid
+  `--color-page` background. Nothing breaks.
+- It's **`sessionStorage`**, so the backdrop lasts for the browser tab's session
+  and is gone on a fresh visit — intentional (it's "the scene you just left").
+- **Weight**: the JPEG is capped/compressed to stay light (~roughly 80–150 KB);
+  raise the `0.6` quality or the `1280` cap in `captureBackground()`
+  (`index.html`) for crisper/heavier, lower them for lighter.
+- **Tint opacity** lives in `css/site.css` (`body.page.has-bgshot::before`), and
+  it deliberately reuses `--color-overlay` so it flips with the light/dark theme
+  just like the real overlay.
+
 ---
 
 ## 9. Security notes
@@ -1758,6 +1815,22 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-13 — frozen backdrop, per-track FFT tuning, flow nav
+- **Frozen-background backdrop** ([8.10](#810-the-frozen-background-backdrop-inner-pages))
+  — index screenshots its frozen scene to `sessionStorage` when the overlay
+  opens (`preserveDrawingBuffer` + `captureBackground()`), and the inner pages
+  paint it behind their content under the same overlay tint. Lightweight JPEG,
+  graceful solid-color fallback.
+- **Per-track FFT band weights** — each `TRACKS` entry gains
+  `w: [low, mid, high]`, tuned to each track's measured RMS energy so the skull
+  reacts to where the track is actually active (loop mid-forward, cicadas
+  mid-focused, blue14 low-focused). `react` retuned (cicadas → 1.0, blue14 →
+  0.55). Model weights are now per-track; the background mix is unchanged.
+- **Full-works page** — removed the featured-works quick-nav from the top;
+  added a plain **"← featured works"** link at the bottom. `FEATURED_WORKS`
+  deleted from `js/site.js`.
+- **Maya-numeral editing** — added an at-a-glance knob table to §8.8.
 
 ### 2026-07-13 — attractor morph is now a "blink"
 - **Simplified the background morph to a brightness blink** — a click fades the
