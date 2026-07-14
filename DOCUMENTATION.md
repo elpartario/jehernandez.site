@@ -1,6 +1,6 @@
 # Site Documentation
 
-Everything the site does, where it lives, and how to change it yourself.
+Everything the site does, where it lives, and how to change it.
 The [README](README.md) is the short version; this is the complete one.
 
 **Contents** — every sub-heading is a link; click to jump.
