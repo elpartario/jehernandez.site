@@ -84,35 +84,8 @@ document.querySelectorAll('nav.menu').forEach(nav => {
 document.querySelectorAll('footer.foot').forEach(f => {
 	f.innerHTML = '<p class="muted">© J.E. Hernández ' + new Date().getFullYear() + ' &nbsp;·&nbsp; ' +
 		FOOTER_LINKS.map(([label, dest]) => linkHTML(label, dest)).join(' &nbsp;·&nbsp; ') +
-		' &nbsp;·&nbsp; Website design info <button class="why-btn" id="designBtn" aria-label="About the website design">?</button>' +
+		' &nbsp;·&nbsp; Website info <button class="why-btn" id="designBtn" aria-label="About the website design">?</button>' +
 		'</p>';
-});
-
-/* ============ FEATURED WORKS — quick-nav injected on the full-works page ============
-   Fills <nav class="featured-nav"> on flow.html with links to the featured
-   pieces (the ones with their own pages), for fast jumping. It is ONLY these
-   works — not the site menu. [slug, title]; the slug is the /work/<slug> page. */
-const FEATURED_WORKS = [
-	['parallax', 'Parallax (or 33,000 Stolen Sunsets)'],
-	['eastendechoes', 'East End Echoes Vol. 1'],
-	['mechanisms', 'Mechanisms'],
-	['soul-echoes', 'Soul Echoes'],
-	['helah', 'Helah'],
-	['desert-shelter', 'Desert Shelter'],
-	['double-refraction', 'Double Refraction'],
-	['show-me', 'Show Me (WAITT Variation)'],
-	['voces-fantasmas', 'Voces Fantasmas'],
-	['in-flanders-fields', 'In Flanders Fields'],
-	['seis-bagatelas', 'Seis Bagatelas (Owl Bagatelles)'],
-	['cube-cubo', 'cube (cubo)'],
-	['the-pontar-river', 'The Pontar River'],
-	['our-sons', 'Our Sons'],
-	['sheer', 'SHEER'],
-	['angulos', 'Ángulos'],
-];
-document.querySelectorAll('.featured-nav').forEach(el => {
-	el.innerHTML = FEATURED_WORKS.map(([slug, title]) =>
-		'<a href="' + cleanHref('work/' + slug) + '">' + title + '</a>').join('');
 });
 
 /* ============ WORK-PAGE NAV — EDIT ONCE, CHANGES ON EVERY WORK PAGE ============
@@ -195,7 +168,7 @@ const DESIGN_TEXT = `
 	<a href="https://silbaca.tv/" target="_blank" rel="noopener">Sílbaca</a>. Inspired 
 	by <a href="https://www.404zero.com/" target="_blank" rel="noopener">404.zero</a>.</p>
 	<p>If you're interested in website design like this for your own project, please
-	don't hesitate to <a href="/contact" target="_blank" rel="noopener">contact me</a>.</p>
+	don't hesitate to <a href="/contact" target="_blank" rel="noopener">contact me</a>.
 `;
 
 /* Wire a "?" button to its modal. The button (<button class="why-btn" id="...">)
@@ -259,3 +232,19 @@ document.querySelectorAll('[data-copy]').forEach(el => {
 
 const topBtn = document.getElementById('topBtn');
 if (topBtn) topBtn.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
+
+/* ============ FROZEN-BACKGROUND BACKDROP ============
+   index.html screenshots its frozen scene into sessionStorage ('bgShot') each
+   time the overlay opens. Here, on the inner pages, we paint that shot behind
+   the content with the same overlay tint on top — so every page looks like the
+   canvas-index overlay. No shot yet (visitor hasn't entered) = solid color. */
+if (document.body.classList.contains('page')) {
+	const shot = sessionStorage.getItem('bgShot');
+	if (shot) {
+		const bg = document.createElement('div');
+		bg.id = 'pageBgShot';
+		bg.style.backgroundImage = 'url(' + shot + ')';
+		document.body.insertBefore(bg, document.body.firstChild);
+		document.body.classList.add('has-bgshot');
+	}
+}
