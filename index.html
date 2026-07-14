@@ -701,7 +701,9 @@ void main(){
 
 	/* =================== main canvas =================== */
 	const canvas = document.getElementById('gl');
-	const gl = canvas.getContext('webgl', { antialias: false });
+	// preserveDrawingBuffer lets us screenshot the frozen scene (toDataURL) when
+	// the overlay opens, to reuse as the backdrop on the inner pages
+	const gl = canvas.getContext('webgl', { antialias: false, preserveDrawingBuffer: true });
 	const dpr = Math.min(devicePixelRatio || 1, 1.5);
 	const U = (p, n) => gl.getUniformLocation(p, n);
 
@@ -872,9 +874,14 @@ void main(){
 	// models use it; the background reactivity (bg.audioSens) is untouched. Give a
 	// newly added track its own value to tune how much it moves the skull.
 	const TRACKS = [
-		{ url: 'assets/loop.mp3',    fb: 'assets/audio.js',   b64: 'AUDIO_B64',   vol: 2.05, react: 1.00 },
-		{ url: 'assets/cicadas.mp3', fb: 'assets/cicadas.js', b64: 'CICADAS_B64', vol: 2.61, react: 0.75 },
-		{ url: 'assets/blue14.mp3',  fb: 'assets/blue14.js',  b64: 'BLUE14_B64',  vol: 0.91, react: 0.30 },
+		// react = overall skull/heart sensitivity for this track. w = [low,mid,high]
+		// FFT band weights, tuned per track to its most active band (measured RMS):
+		//   loop    = mid-dominant musical mix  -> balanced, mid-forward
+		//   cicadas = midrange texture (low/high near noise floor) -> focus mid
+		//   blue14  = bass-heavy + loud         -> focus low, lower overall react
+		{ url: 'assets/loop.mp3',    fb: 'assets/audio.js',   b64: 'AUDIO_B64',   vol: 2.05, react: 1.00, w: [0.45, 0.40, 0.15] },
+		{ url: 'assets/cicadas.mp3', fb: 'assets/cicadas.js', b64: 'CICADAS_B64', vol: 2.61, react: 1.00, w: [0.12, 0.78, 0.10] },
+		{ url: 'assets/blue14.mp3',  fb: 'assets/blue14.js',  b64: 'BLUE14_B64',  vol: 0.91, react: 0.55, w: [0.72, 0.23, 0.05] },
 	];
 
 	function ensureCtx(){
@@ -1059,8 +1066,12 @@ void main(){
 			b.valModel = smooth(b.valModel, Math.min(1.5, raw * CFG.audioSens));
 			b.valBg    = smooth(b.valBg,    Math.min(1.5, raw * CFG.bg.audioSens));
 		}
+		// the skull/heart model uses the ACTIVE track's per-band weights (w); the
+		// background keeps a fixed low/mid/high mix
+		const w = (TRACKS[activeTrack] && TRACKS[activeTrack].w) || [0.5, 0.3, 0.2];
+		const ws = w[0] + w[1] + w[2];
 		return {
-			model: 0.5 * bands[0].valModel + 0.3 * bands[1].valModel + 0.2 * bands[2].valModel,
+			model: (w[0] * bands[0].valModel + w[1] * bands[1].valModel + w[2] * bands[2].valModel) / ws,
 			bg:    0.5 * bands[0].valBg    + 0.3 * bands[1].valBg    + 0.2 * bands[2].valBg
 		};
 	}
@@ -1082,11 +1093,29 @@ void main(){
 	const overlay = document.getElementById('overlay');
 	let entered = false, running = true;
 
+	/* Screenshot the frozen scene into a lightweight JPG in sessionStorage, so the
+	   inner pages can show the same backdrop (under their overlay tint). Downscaled
+	   to keep it small; runs each time the overlay opens so it stays current. */
+	function captureBackground(){
+		try {
+			const maxW = 1280, s = Math.min(1, maxW / canvas.width);
+			const w = Math.max(1, Math.round(canvas.width * s));
+			const h = Math.max(1, Math.round(canvas.height * s));
+			const oc = document.createElement('canvas');
+			oc.width = w; oc.height = h;
+			const c = oc.getContext('2d');
+			c.fillStyle = '#000'; c.fillRect(0, 0, w, h);   // JPG has no alpha — black behind
+			c.drawImage(canvas, 0, 0, w, h);
+			sessionStorage.setItem('bgShot', oc.toDataURL('image/jpeg', 0.6));
+		} catch (e) { /* storage full / blocked — skip, inner pages fall back to solid color */ }
+	}
+
 	function setOverlay(on){
 		overlay.classList.toggle('open', on);
 		document.body.classList.toggle('overlay-open', on);
 		// the whole scene (and the music) freezes behind the overlay page
 		if (on) {
+			captureBackground();   // stash the frozen frame for the inner pages
 			running = false;
 			if (actx && audioStarted) actx.suspend();
 		} else {
