@@ -188,80 +188,152 @@
 	#soundT.muted .tepo { opacity: 0.35; }
 
 	/* ============ track selector: Mayan numerals 1/2/3 ============
-	   They live to the right of the teponaztli and are tucked left (behind it)
-	   until audio is on, then slide right toward the center. Faded when not the
-	   active track; the active one is lit; all retract when audio is off. */
-	@font-face {
-		font-family: 'MayanNumerals';
-		src: url(assets/fonts/MayanNumerals.woff2) format('woff2');
-		font-display: swap;
-	}
-	#tracks {
-		position: fixed;
-		/* start just past the teponaztli's right edge (its width = the clamp below) */
-		left: calc(2.5vmax + clamp(64px, 7.5vmax, 110px) + 0.5em);
-		/* --- VERTICAL POSITION OF THE NUMERALS (two knobs) ---
-		   --tnum-center is a fixed anchor: the distance from the screen bottom up
-		   to the CENTER of the teponaztli's SVG glyph (not the bobbing arrow),
-		   built from the same pieces as the teponaztli so it tracks every screen
-		   size: 2.5vmax (its bottom offset) + 1.4rem (the caption line under the
-		   glyph) + 0.334 × <teponaztli width> (half the glyph height; the SVG is
-		   382×255, so height ≈ 0.667 × width).
+   All three numerals begin at one shared point behind the teponaztli.
+   When audio turns on, they fan rightward into a vertical stack:
+     1 moves diagonally up,
+     2 moves horizontally,
+     3 moves diagonally down.
+   Inactive tracks remain faded; the selected track remains fully lit. */
+@font-face {
+	font-family: 'MayanNumerals';
+	src: url(assets/fonts/MayanNumerals.woff2) format('woff2');
+	font-display: swap;
+}
 
-		   --tnum-shift is the FINE knob you actually tune. It is the translateY
-		   percentage of the row's own height. IMPORTANT DIRECTION:
-		     LOWER the % -> numerals move UP.   RAISE the % -> numerals move DOWN.
-		   (50% sits the row exactly centered on the anchor; 33% lifts it above.)
-		   It is split desktop vs mobile because the numerals size differently on
-		   each — desktop uses the value here, mobile overrides it in the
-		   @media (max-width: 700px) block below. */
-		--tnum-center: calc(2.5vmax + 1.4rem + 0.334 * clamp(64px, 7.5vmax, 110px));
-		--tnum-shift: 33%;           /* DESKTOP: lower % = higher numerals */
-		/* spacing between numerals. DESKTOP is uniform + tight (the original look).
-		   MOBILE (below) is closer and makes 1->2 tighter than 2->3. */
-		--gap12: 0.4em;              /* DESKTOP gap between 1 and 2 */
-		--gap23: 0.4em;              /* DESKTOP gap between 2 and 3 (equal = uniform) */
-		bottom: var(--tnum-center);
-		transform: translateY(var(--tnum-shift));
-		z-index: 16;                 /* above the trig square (15); teponaztli is 17 so they still emerge from behind it */
-		display: flex;
-		align-items: center;
-		pointer-events: none;
-	}
-	@media (max-width: 700px) {
-		/* MOBILE numeral height — independent of desktop. Same rule: LOWER % =
-		   higher, RAISE % = lower. Tune this number for phones only. */
-		/* closer spacing on phones, and shift the whole row LEFT toward the
-		   teponaztli (smaller left = further left; they sit behind the tepo at z-16). */
-		#tracks {
-			--tnum-shift: 50%; --gap12: 0.12em; --gap23: 0.34em;
-			left: calc(2.5vmax + clamp(64px, 7.5vmax, 110px) - 0.6em);
-		}
-	}
-	.tnum {
-		font-family: 'MayanNumerals', serif;
-		font-size: clamp(20px, 3.4vmax, 46px);
-		line-height: 1;
-		color: var(--color-icon);
-		background: none;
-		border: none;
-		padding: 0;
-		margin-left: var(--gap23);          /* default = the 2->3 gap */
-		cursor: pointer;
-		opacity: 0;                  /* hidden + tucked left until audio is on */
-		transform: translateX(-2.4em);
-		transition: transform 0.5s ease, opacity 0.4s ease, color 0.15s ease;
-	}
-	.tnum:first-child { margin-left: 0; }               /* numeral 1: no leading gap */
-	.tnum:nth-child(2) { margin-left: var(--gap12); }   /* 1->2 gap (tighter than 2->3) */
-	body.audio-on #tracks { pointer-events: auto; }
-	body.audio-on .tnum { opacity: 0.35; transform: translateX(0); }  /* faded, in place */
-	body.audio-on .tnum.active { opacity: 1; }                        /* selected = lit */
-	.tnum:hover { color: var(--color-main); }
-	/* stagger so they scroll out one after another */
-	body.audio-on .tnum:nth-child(1) { transition-delay: 0.02s; }
-	body.audio-on .tnum:nth-child(2) { transition-delay: 0.10s; }
-	body.audio-on .tnum:nth-child(3) { transition-delay: 0.18s; }
+#tracks {
+	position: fixed;
+
+	/* The vertical center of the teponaztli SVG glyph. This uses the same
+	   responsive teponaztli width as #soundT, so the stack follows it across
+	   screen sizes without separate desktop/mobile positioning rules. */
+	--tnum-center:
+		calc(
+			2.5vmax
+			+ 1.4rem
+			+ 0.334 * clamp(64px, 7.5vmax, 110px)
+		);
+
+	/* Distance from the teponaztli's right edge to the CENTER of the numeral
+	   column. The clamp accounts for the responsive numeral size, leaving a
+	   small visual gap at both phone and desktop sizes. */
+	--tnum-column-offset: clamp(16px, 2.1vmax, 50px);
+
+	/* Vertical center-to-center spacing. Because this uses em, it scales with
+	   the numeral font size instead of relying on viewport-specific gaps. */
+	--tnum-spread: 1em;
+
+	/* How far left the numerals begin while hidden behind the teponaztli.
+	   Increase this to bury them farther behind it before they emerge. */
+	--tnum-tuck: 2.4em;
+
+	left:
+		calc(
+			2.5vmax
+			+ clamp(64px, 7.5vmax, 110px)
+			+ var(--tnum-column-offset)
+		);
+
+	bottom: var(--tnum-center);
+
+	/* This is a single origin point rather than a horizontal flex row.
+	   The three buttons are positioned absolutely around this point. */
+	width: 0;
+	height: 0;
+
+	z-index: 16; /* teponaztli is 17, so the numerals emerge from behind it */
+	overflow: visible;
+	pointer-events: none;
+}
+
+.tnum {
+	/* Every numeral begins at the same center point. */
+	position: absolute;
+	left: 0;
+	top: 0;
+
+	font-family: 'MayanNumerals', serif;
+	font-size: clamp(20px, 3.4vmax, 46px);
+	line-height: 1;
+
+	color: var(--color-icon);
+	background: none;
+	border: none;
+	padding: 0;
+	margin: 0;
+
+	cursor: pointer;
+	touch-action: manipulation;
+
+	/* Hidden state: centered vertically at the shared origin, but shifted
+	   left so it sits underneath the higher-z-index teponaztli. */
+	opacity: 0;
+	pointer-events: none;
+	transform:
+		translate(
+			calc(-50% - var(--tnum-tuck)),
+			-50%
+		);
+
+	/* Each child sets its own reveal delay below. Color changes remain
+	   immediate so hover feedback is not delayed by the entrance stagger. */
+	--tnum-delay: 0s;
+
+	transition:
+		transform 0.58s cubic-bezier(0.22, 1, 0.36, 1) var(--tnum-delay),
+		opacity 0.4s ease var(--tnum-delay),
+		color 0.15s ease;
+
+	will-change: transform, opacity;
+}
+
+/* The buttons become interactive only after audio is switched on. */
+body.audio-on #tracks {
+	pointer-events: auto;
+}
+
+body.audio-on .tnum {
+	opacity: 0.35;
+	pointer-events: auto;
+}
+
+/* Numeral 1: leaves the shared center diagonally upward and rightward. */
+body.audio-on .tnum:nth-child(1) {
+	--tnum-delay: 0.02s;
+	transform:
+		translate(
+			-50%,
+			calc(-50% - var(--tnum-spread))
+		);
+}
+
+/* Numeral 2: leaves the shared center directly to the right. */
+body.audio-on .tnum:nth-child(2) {
+	--tnum-delay: 0.10s;
+	transform:
+		translate(
+			-50%,
+			-50%
+		);
+}
+
+/* Numeral 3: leaves the shared center diagonally downward and rightward. */
+body.audio-on .tnum:nth-child(3) {
+	--tnum-delay: 0.18s;
+	transform:
+		translate(
+			-50%,
+			calc(-50% + var(--tnum-spread))
+		);
+}
+
+/* The selected track remains fully illuminated. */
+body.audio-on .tnum.active {
+	opacity: 1;
+}
+
+.tnum:hover {
+	color: var(--color-main);
+}
 
 	/* ============ heart/skull swap button (bottom right) ============
 	   Appears (body.swap-ready) a while after the hints clear; the canvas
