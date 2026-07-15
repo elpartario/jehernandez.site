@@ -244,6 +244,12 @@
 	overflow: visible;
 	pointer-events: none;
 }
+/* This must come after the closing brace of #tracks. */
+@media (max-width: 700px) {
+	#tracks {
+		--tnum-column-offset: 14px;
+	}
+}
 
 .tnum {
 	/* Every numeral begins at the same center point. */
