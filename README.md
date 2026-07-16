@@ -28,6 +28,21 @@ the skull.
   time and beats as the cursor nears the center — and the button then offers a
   skull to morph back. The heart is still clickable to enter the site. The
   whole feature is one switch: `CFG.heart.enabled` in `index.html`.
+- **Attractor morph button**: a small square (bottom center) appears a few
+  seconds after the heart, previewing the *current* strangeTrig attractor
+  unblurred. Clicking it cycles forward through the pool — the background
+  **"blinks"**: fades to black, swaps the type (with fresh random A/B values, so
+  the same type looks different each time), and fades back in. Cycling fast
+  keeps it black; it never snaps. Switch: `CFG.bg.morphButton`.
+  (Both morph buttons get their own bobbing ↓ arrow, which retires on first
+  click — same look and timing as the teponaztli's.)
+- **Frozen backdrop**: the scene you left on the landing is screenshotted
+  (lightweight JPG, `sessionStorage`) and painted behind **every inner page**
+  under the same overlay tint, in both themes — so the site reads as one
+  continuous surface. Never entered the landing = plain solid background.
+- **Explainer modals**: a "?" beside the long-count date, another beside
+  "Cuicatl" on the full-works page, and "Website info" in the footer. All share
+  one style; their text lives in `js/site.js` (one constant each).
 - **Light/dark**: pages and overlay come in a light (`#f0f0f0` / near-black)
   and an inverted dark theme; **dark is the default for new visitors** (one
   line — `THEME_DEFAULT` in `js/theme-init.js`). A sun/moon toggle (bottom-
@@ -46,8 +61,11 @@ the skull.
 - **Every page** carries the long-count date, the menu and footer (both
   injected from single sources in `js/site.js`), the theme toggle, and the
   theme-aware mini corner skull.
-- Works both served (Netlify, GitHub Pages, `python -m http.server`) **and**
-  double-clicked from disk (base64 fallbacks for skull + audio).
+- **Serve it, don't double-click it.** Internal links are clean and
+  root-absolute (`/about`), which a browser can only resolve over http — so use
+  Netlify, GitHub Pages, or `python -m http.server` (DOCUMENTATION.md §1.8).
+  Opened straight from disk the landing still renders (base64 fallbacks cover
+  the skull/heart/audio), but navigation between pages won't work.
 
 ## Quick facts
 
@@ -56,9 +74,10 @@ the skull.
   numerals 1/2/3). See [DOCUMENTATION.md §1.1 / §8.8](DOCUMENTATION.md) for the
   fallback + conversion one-liners and how to add a fourth.
 - Background attractor: `CFG.bg` in `index.html` — picks a random type from
-  `typePool` (`[0,1,3,4,6]`) each load by default; set `typeRandom: false` to pin
+  `typePool` (`[0,1,3,6]`) each load by default; set `typeRandom: false` to pin
   a fixed `type` (0–6). Test any live with `?trig=N`; `enabled: false` turns
-  the whole background off.
+  the whole background off. The bottom-center square cycles the pool live
+  (`morphButton`, `fadeOutDur`/`fadeInDur`, `morphSeedRange`).
 - Heart surprise: `CFG.heart` in `index.html` — `enabled: false` reverts the
   site to skull-only; `spinSpeed`, `beatAmp`/`beatRate`, `appearAfter`, and the
   morph speed are all knobs there (see [DOCUMENTATION.md §8.7](DOCUMENTATION.md)).

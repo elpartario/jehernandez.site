@@ -1328,6 +1328,32 @@ sit a fixed distance *below* the center of the screen, measured in `vmin`
 In every case it's the `vmin` number you edit; leave the `50% +` and the
 `+ 2.1em` alone.
 
+**The morph-button arrows (`.morph-hint`).** Two more arrows point at the two
+morph buttons — the heart/skull swap (bottom right, §8.7) and the attractor
+square (bottom center, §8.9). Each is a `<span class="morph-hint">` placed
+*inside* its own button, so it's positioned against that button rather than the
+viewport: `bottom: calc(100% + 14px)` puts it 14px above, `left: 50%` +
+`translateX(-50%)` centers it. Behaviour deliberately mirrors the teponaztli's
+arrow exactly:
+
+- appears **3s after its own button becomes ready** (`body.swap-ready` /
+  `body.bg-ready` — so each starts on its own clock, not the page's),
+- fades in, blinks and bobs using the **same** `hintIn` / `hintPulse` /
+  `hintBob` animations, at the same size, colour and timing,
+- **retires forever on the first click of its button**: the click handler adds
+  `.retired`, which fades it out with the same `hintOut` the teponaztli uses.
+  Only the arrow retires — the button and its canvas are untouched.
+
+Two gotchas if you edit these:
+- `#swapBtn`/`#bgBtn` carry **`font-family: inherit`**. Buttons don't inherit
+  the body font (the browser's own stylesheet overrides it), so without this the
+  `↓` renders in a different font from the teponaztli's arrow — the mismatch is
+  most obvious on phones, where the system font differs most.
+- They also need **`overflow: visible`** so the arrow can sit outside the button.
+
+To change the glyph, edit `content: '↓'` in `.morph-hint::before`; to move it,
+edit the `14px` in `bottom: calc(100% + 14px)`.
+
 ### 8.3 The audio loop crossfade
 
 The MP3 no longer hard-loops: each pass of the file is its own source that
@@ -1629,51 +1655,49 @@ re-selecting never restarts it), and `selectTrack()` only crossfades gains;
 - **Editing the Mayan numerals — quick reference.** Everything is in the
   `#tracks` and `.tnum` rules in `index.html`'s `<style>` block. At a glance:
 
+  **The layout model (read this first).** `#tracks` is **not** a row or a box —
+  it's a single, zero-size **origin point** (`width: 0; height: 0`) pinned next
+  to the teponaztli. The three numerals are `position: absolute` and each
+  `translate`s itself out from that shared point: **1 goes up, 2 stays at the
+  point, 3 goes down** — a vertical column. While hidden they all sit at the
+  same point, shoved left so the teponaztli covers them; turning audio on slides
+  them out to their slots. This is why there are no gap/row values: you move the
+  *origin*, and the numerals follow.
+
   | To change… | Edit | Notes |
   |---|---|---|
-  | how far right the row sits | `#tracks` `left` | bigger = further right; mobile has its own smaller `left` |
-  | height / vertical position | `#tracks` `--tnum-shift` | **lower % = higher, higher % = lower**; desktop + mobile split |
-  | gap 1→2 and 2→3 | `#tracks` `--gap12` / `--gap23` | desktop uniform `0.4em`; mobile closer + asymmetric |
+  | how far right the column sits | `#tracks` `--tnum-column-offset` | distance from the teponaztli's **right edge** to the column's center; bigger = further right. Mobile has its own value |
+  | vertical position | `#tracks` `--tnum-center` | distance from the screen bottom to the column's center; bigger = higher |
+  | spacing between numerals | `#tracks` `--tnum-spread` | center-to-center gap, in `em` so it scales with the numeral size |
+  | how far they hide behind the tepo | `#tracks` `--tnum-tuck` | bigger = they start further left / more buried before sliding out |
   | numeral size | `.tnum` `font-size` | a `clamp()` — scales with screen |
   | color (rest / hover) | `.tnum` `color` / `.tnum:hover` | uses the theme accent vars |
-  | slide-in distance | `.tnum` `translateX(-2.4em)` | how far left they start (hidden behind the tepo) |
-  | slide-in stagger | `.tnum:nth-child()` `transition-delay` | when each numeral appears |
+  | slide-in stagger | `.tnum:nth-child()` `--tnum-delay` | when each numeral appears (`0.02s` / `0.10s` / `0.18s`) |
   | which glyphs | the `&#x1D2E1;`–`&#x1D2E3;` in the `#tracks` HTML | real Unicode Mayan numerals |
 
-  The rest of this list explains each in more depth.
-  - **Spacing between numerals** — two vars on `#tracks`: `--gap12` (1→2) and
-    `--gap23` (2→3), split desktop/mobile (base rule = desktop, the
-    `@media (max-width: 700px)` block = mobile). **Desktop is uniform** (both
-    `0.4em` — the tight original look); **mobile is closer and asymmetric**
-    (`1→2` tighter than `2→3`, since numeral 1 is wide). Mobile also shifts the
-    whole row **left toward the teponaztli** via a smaller `left` in that block.
-    (Implemented as `margin-left` on the numerals, so the click targets never
-    overlap.)
-  - **Stacking** — the numeral row is `z-index: 16`, above the attractor square
+  The four `--tnum-*` variables in depth:
+  - **`--tnum-center`** — the **vertical** anchor: distance from the bottom of
+    the screen up to the center of the teponaztli's SVG glyph, so the column is
+    centered on the drum. It's built from the teponaztli's own measurements —
+    `2.5vmax` (its gap from the bottom) `+ 1.4rem` (the "(audio on/off)" caption
+    line under the glyph) `+ 0.334 × teponaztli width` (half the glyph height;
+    the SVG is 382×255, so height ≈ 0.667 × width) — which is why it tracks
+    every screen size with **no desktop/mobile split**. **Bigger = higher.**
+    Only touch it if you resize the teponaztli or change its caption.
+  - **`--tnum-column-offset`** — the **horizontal** knob, and the one you'll
+    actually reach for: the distance from the teponaztli's right edge to the
+    center of the column. **Bigger = further right** (further from the drum).
+    Desktop uses `clamp(16px, 2.1vmax, 50px)`; the `@media (max-width: 700px)`
+    block overrides it (currently `30px`) — this is the *only* value split
+    between desktop and mobile.
+  - **`--tnum-spread`** — center-to-center spacing between the numerals (`1em`).
+    In `em`, so it scales with `font-size` automatically instead of needing
+    per-screen gaps. Bigger = a taller, looser column.
+  - **`--tnum-tuck`** — how far left the numerals sit while hidden (`2.4em`),
+    i.e. how far behind the teponaztli they're buried before they emerge.
+  - **Stacking** — `#tracks` is `z-index: 16`: above the attractor square
     (`#bgBtn`, 15) so it's never hidden by it, but below the teponaztli
-    (`#soundT`, 17) so it still slides out from *behind* the teponaztli.
-  - **Vertical position (the important one) — two knobs on `#tracks`.** The row
-    is positioned relative to the teponaztli's SVG glyph and there are **two**
-    controls; in practice you only ever touch the second one:
-    1. **`--tnum-center`** — the fixed *anchor*: the distance from the bottom of
-       the screen up to the **center of the glyph**. It's a length (not a
-       percentage): `calc(2.5vmax + 1.4rem + 0.334 * clamp(64px, 7.5vmax, 110px))`
-       = `2.5vmax` (the teponaztli's own gap from the bottom) `+ 1.4rem` (the
-       "(audio on/off)" caption line under the glyph) `+ 0.334 × teponaztli width`
-       (half the glyph height; the SVG is 382×255, so height ≈ 0.667 × width).
-       Built from the teponaztli's own measurements so it tracks every screen
-       size. Only touch this if you resize the teponaztli or change its caption.
-    2. **`--tnum-shift`** — the *fine knob you actually tune*, applied as
-       `transform: translateY(var(--tnum-shift))`. It's a **percentage of the
-       row's own height**. **DIRECTION (important, and easy to get backwards):
-       LOWER the % → numerals move UP; RAISE the % → numerals move DOWN.** (At
-       `50%` the row sits exactly centered on the anchor; `33%` lifts it above.)
-       Why: `translateY` shifts the row *down* by that percent of its height, so
-       a bigger percent pushes it lower.
-    - **Desktop vs mobile are split** because the numerals size differently on
-      each. Desktop uses `--tnum-shift` in the main `#tracks` rule (currently
-      `33%`); **mobile** overrides it in the `@media (max-width: 700px)` block
-      (currently `50%`). Tune each independently — same direction rule for both.
+    (`#soundT`, 17) so the numerals still slide out from *behind* the drum.
 - **Numeral font** — `MayanNumerals` (Noto Sans Mayan Numerals, subset to the
   digits), `@font-face` at the top of the `#tracks` CSS. The glyphs are the
   real Unicode Mayan numerals `&#x1D2E1;`–`&#x1D2E3;` (bars-and-dots).
@@ -1762,25 +1786,44 @@ the canvas-index overlay — so the whole site feels like one continuous surface
    **1280 px**), exported as a **JPEG** (`toDataURL('image/jpeg', 0.6)`), and
    saved in **`sessionStorage['bgShot']`**. It refreshes every time the overlay
    opens, so it's always the latest frozen frame.
-3. On every inner page, `js/site.js` reads `bgShot`; if present it injects a
-   fixed full-bleed `#pageBgShot` div with that image and adds `.has-bgshot` to
-   `<body>`. CSS then paints the shot at the back (`z-index: -2`) with a tint
-   layer over it (`::before`, `z-index: -1`) at **the same opacity as the
-   landing overlay** — `rgba(var(--color-overlay), 0.86)` — so the page content
-   reads exactly like the index overlay.
+3. On every inner page, `js/site.js` reads `bgShot`; if present it hands the
+   image to CSS as a custom property (`--bgshot-url` on `<body>`) and adds
+   `.has-bgshot`. The `body.page.has-bgshot` rule in `css/site.css` then paints
+   it as the **body's own background**, with a tint layer stacked *on top of it*
+   inside the same `background-image`:
+   ```css
+   background-image:
+     linear-gradient(rgba(var(--color-overlay), 0.86), rgba(var(--color-overlay), 0.86)),
+     var(--bgshot-url);
+   ```
+   The tint is **the same opacity as the landing overlay**, so the page reads
+   exactly like the index overlay.
+
+**Why the body's background (and not a div).** An earlier version used a
+separate `#pageBgShot` div behind the content with a negative `z-index`. That's
+fragile: any opaque ancestor background or stacking context hides the shot while
+a tint layer still shows — which looks exactly like "the overlay works but the
+screenshot is missing." A body background always paints behind every element, so
+there's nothing to fight with. (In `background-image`, the **first layer paints
+on top**, which is why the tint gradient is listed before the shot.)
 
 **Notes / knobs.**
+- **Works in both themes.** The tint uses `--color-overlay`, which flips with
+  light/dark, so the backdrop is correct in either.
 - **No shot yet** (visitor opened an inner page directly, before ever entering
   the landing) → `.has-bgshot` isn't added and the page falls back to the solid
   `--color-page` background. Nothing breaks.
 - It's **`sessionStorage`**, so the backdrop lasts for the browser tab's session
   and is gone on a fresh visit — intentional (it's "the scene you just left").
+  Because `captureBackground()` runs on *every* overlay open, going back to the
+  landing and re-entering **replaces** the old shot with the new one.
 - **Weight**: the JPEG is capped/compressed to stay light (~roughly 80–150 KB);
   raise the `0.6` quality or the `1280` cap in `captureBackground()`
   (`index.html`) for crisper/heavier, lower them for lighter.
-- **Tint opacity** lives in `css/site.css` (`body.page.has-bgshot::before`), and
-  it deliberately reuses `--color-overlay` so it flips with the light/dark theme
-  just like the real overlay.
+- **How much of the shot shows through**: the `0.86` in the two gradient stops
+  (`body.page.has-bgshot`, `css/site.css`). **Both stops must match** — lower =
+  more screenshot visible, higher = more tint.
+- `background-attachment: fixed` keeps the shot still while the page scrolls.
 
 ---
 
@@ -1827,6 +1870,30 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-13 — backdrop fix (light + dark), uniform arrows, doc audit
+- **Fixed the frozen backdrop not showing on inner pages.** Its CSS had gone
+  missing, so the injected div had no position/size/z-index and was invisible —
+  what looked like "the tint works but the screenshot doesn't" was just the
+  plain page background. Rebuilt it as the **body's own background**
+  (`--bgshot-url` custom property + `body.page.has-bgshot`, tint layered over
+  the shot in one `background-image`) instead of a negative-z-index div, which
+  removes the whole class of stacking-context failure. Because the tint uses
+  `--color-overlay`, it now works in **light mode as well as dark**.
+- **Standardized the morph-button arrows** to look exactly like the
+  teponaztli's. Root cause of the mismatch: `.morph-hint` lives inside a
+  `<button>`, and buttons don't inherit `font-family`, so the `↓` rendered in
+  the browser's default font (most visible on phones). Added
+  `font-family: inherit` to `#swapBtn`/`#bgBtn` and replaced the
+  transition + `::before` pulse with the same `hintIn`/`hintPulse`/`hintBob`
+  set (and `hintOut` on `.retired`).
+- **Docs**: rewrote §8.8's Mayan-numeral reference for the new origin-point
+  column layout (`--tnum-center` / `--tnum-column-offset` / `--tnum-spread` /
+  `--tnum-tuck`; the old `--tnum-shift`/`--gap12`/`--gap23` are gone),
+  documented the morph-button arrows in §8.2, updated §8.10 to the body-
+  background approach, and refreshed the README (added the attractor morph
+  button, frozen backdrop and modals; fixed the `typePool` value and the
+  "works double-clicked" claim, which clean root-absolute URLs made false).
 
 ### 2026-07-13 — frozen backdrop, per-track FFT tuning, flow nav
 - **Frozen-background backdrop** ([8.10](#810-the-frozen-background-backdrop-inner-pages))
