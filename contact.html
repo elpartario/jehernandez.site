@@ -21,17 +21,19 @@
 
 
 	<main class="sheet">
-		<h1>Hello!</h1>
-		<p>If you have any questions regarding invoices, leasing my music, collaboration, or you
+		<h1><span lang="en">Hello!</span><span lang="es">¡Hola!</span></h1>
+		<p lang="en">If you have any questions regarding invoices, leasing my music, collaboration, or you
 		just want to say hello, please fill out the form below.</p>
-		<p>Or, alternatively, email me:
+		<p lang="es">Si tienes cualquier pregunta sobre facturas, licenciar mi música, colaboraciones, o
+		simplemente quieres saludar, por favor llena el formulario de abajo.</p>
+		<p><span lang="en">Or, alternatively, email me:</span><span lang="es">O, si prefieres, escríbeme:</span>
 		<span class="copy-email" data-copy="jose.e.h.lopez@gmail.com" title="Click to copy"><u>jose.e.h.lopez@gmail.com</u></span>
-		<span class="muted">(click to copy)</span></p>
+		<span class="muted"><span lang="en">(click to copy)</span><span lang="es">(clic para copiar)</span></span></p>
 
-		<h2>What I do</h2>
-		<p>Film Composition · Commissions · Artistic Direction · Lecturing</p>
+		<h2><span lang="en">What I do</span><span lang="es">Lo que hago</span></h2>
+		<p><span lang="en">Film Composition · Commissions · Artistic Direction · Lecturing</span><span lang="es">Composición para cine · Encargos · Dirección artística · Conferencias</span></p>
 
-		<h2>Let&#8217;s work together</h2>
+		<h2><span lang="en">Let&#8217;s work together</span><span lang="es">Trabajemos juntos</span></h2>
 		<!-- Web3Forms: submissions are emailed to the account tied to access_key.
 		     Change the key or the subject line here; the styling is unchanged. -->
 		<form class="cform" action="https://api.web3forms.com/submit" method="POST">
@@ -40,10 +42,10 @@
 			<input type="hidden" name="from_name" value="jehernandez.music">
 			<!-- honeypot: bots fill this hidden field, real people can't see it -->
 			<input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
-			<input type="text" name="name" placeholder="Name" required>
-			<input type="email" name="email" placeholder="Email" required>
-			<textarea name="message" rows="6" placeholder="Your message" required></textarea>
-			<button type="submit">Send</button>
+			<input type="text" name="name" placeholder="Name" data-ph-en="Name" data-ph-es="Nombre" required>
+			<input type="email" name="email" placeholder="Email" data-ph-en="Email" data-ph-es="Correo" required>
+			<textarea name="message" rows="6" placeholder="Your message" data-ph-en="Your message" data-ph-es="Tu mensaje" required></textarea>
+			<button type="submit"><span lang="en">Send</span><span lang="es">Enviar</span></button>
 		</form>
 			<footer class="foot"></footer>
 	</main>

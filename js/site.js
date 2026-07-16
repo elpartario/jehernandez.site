@@ -31,15 +31,16 @@ document.querySelectorAll('.lc-date').forEach(el => { el.textContent = longCount
 document.querySelectorAll('.year').forEach(el => { el.textContent = new Date().getFullYear(); });
 
 /* ============ MENU — EDIT ONCE, CHANGES ON EVERY PAGE ============
-   [label, destination]. Destinations without "http" are pages of this site
-   (BASE handles the work/ subfolder); full URLs open in a new tab. */
+   [label, destination]. A label is either a plain string (same in both
+   languages) or a { en, es } pair — see the t() helper below. Destinations
+   without "http" are pages of this site; full URLs open in a new tab. */
 const MENU_LINKS = [
-	['home', '/'],
-	['about', 'about'],
-	['work', 'work'],
-	['writing', 'https://jehernandez.substack.com'],
-	['store', 'https://alkabilmusic.square.site/'],
-	['contact', 'contact'],
+	[{ en: 'home', es: 'inicio' }, '/'],
+	[{ en: 'about', es: 'acerca' }, 'about'],
+	[{ en: 'work', es: 'obra' }, 'work'],
+	[{ en: 'writing', es: 'escritos' }, 'https://jehernandez.substack.com'],
+	[{ en: 'store', es: 'tienda' }, 'https://alkabilmusic.square.site/'],
+	[{ en: 'contact', es: 'contacto' }, 'contact'],
 ];
 /* icon links rendered after the text links (inline SVG, add more if needed) */
 const MENU_ICONS = [
@@ -51,11 +52,18 @@ const MENU_ICONS = [
    Same link rules as the menu. The year updates itself. */
 const FOOTER_LINKS = [
 	['alkabil.audio', 'https://www.alkabil.audio'],
-	['Bio', 'about'],
-	['My Work', 'work'],
-	['Contact Me', 'contact'],
-	['Buy My Music', 'https://alkabilmusic.square.site/'],
+	[{ en: 'Bio', es: 'Biografía' }, 'about'],
+	[{ en: 'My Work', es: 'Mi obra' }, 'work'],
+	[{ en: 'Contact Me', es: 'Contáctame' }, 'contact'],
+	[{ en: 'Buy My Music', es: 'Compra mi música' }, 'https://alkabilmusic.square.site/'],
 ];
+
+/* Render a label that may be a plain string OR a { en, es } pair. For a pair we
+   emit both languages as lang-tagged spans; CSS shows only the active one. */
+function t(label) {
+	if (typeof label === 'string') return label;
+	return '<span lang="en">' + label.en + '</span><span lang="es">' + label.es + '</span>';
+}
 
 /* Turn a [label, dest] pair into an <a>. Rules for `dest`:
      - starts with "http"  -> external link, opens in a new tab.
@@ -72,8 +80,8 @@ function cleanHref(dest) {
 }
 function linkHTML(label, dest) {
 	return dest.startsWith('http')
-		? '<a href="' + dest + '" target="_blank" rel="noopener">' + label + '</a>'
-		: '<a href="' + cleanHref(dest) + '">' + label + '</a>';
+		? '<a href="' + dest + '" target="_blank" rel="noopener">' + t(label) + '</a>'
+		: '<a href="' + cleanHref(dest) + '">' + t(label) + '</a>';
 }
 document.querySelectorAll('nav.menu').forEach(nav => {
 	nav.innerHTML =
@@ -84,7 +92,8 @@ document.querySelectorAll('nav.menu').forEach(nav => {
 document.querySelectorAll('footer.foot').forEach(f => {
 	f.innerHTML = '<p class="muted">© J.E. Hernández ' + new Date().getFullYear() + ' &nbsp;·&nbsp; ' +
 		FOOTER_LINKS.map(([label, dest]) => linkHTML(label, dest)).join(' &nbsp;·&nbsp; ') +
-		' &nbsp;·&nbsp; Website info <button class="why-btn" id="designBtn" aria-label="About the website design">?</button>' +
+		' &nbsp;·&nbsp; ' + t({ en: 'Website info', es: 'Info del sitio' }) +
+		' <button class="why-btn" id="designBtn" aria-label="About the website design">?</button>' +
 		'</p>';
 });
 
@@ -93,8 +102,8 @@ document.querySelectorAll('footer.foot').forEach(f => {
    the "featured work / full list of works" links live in one place instead of
    being copied into all 16 pages. Same [label, dest] rules as the menu. */
 const WORK_NAV = [
-	['← featured work', 'work'],
-	['full list of works', 'flow'],
+	[{ en: '← featured work', es: '← obra destacada' }, 'work'],
+	[{ en: 'full list of works', es: 'lista completa de obras' }, 'flow'],
 ];
 document.querySelectorAll('.worknav').forEach(el => {
 	el.innerHTML = WORK_NAV.map(([label, dest]) => linkHTML(label, dest)).join(' &nbsp;·&nbsp; ');
@@ -124,24 +133,94 @@ themeT.addEventListener('click', () => {
 	setTimeout(() => html.classList.remove('theming'), 750);
 });
 
+/* ============ EN / ES LANGUAGE TOGGLE ============
+   The pre-paint default is in js/theme-init.js (LANG_DEFAULT); here we inject
+   the "EN / ES" control into .lc-wrap (next to the "?") on every page and wire
+   it. Switching just sets <html lang> — CSS then shows the matching lang blocks
+   everywhere at once (see the show/hide rule in css/site.css). Anything that has
+   to react in JS (e.g. the teponaztli caption on the landing) listens for the
+   'langchange' event. The selected/faded styling is pure CSS.
+
+   Both switches live in js/theme-init.js — LANG_TOGGLE (off = no control at all,
+   site stays LANG_DEFAULT) and LANG_TOGGLE_ON_LANDING (off = no control on the
+   skull landing only). The `typeof` guards keep this working if theme-init.js is
+   ever missing or the vars are removed. */
+const LANG_UI = (typeof LANG_TOGGLE === 'undefined') || LANG_TOGGLE;
+const LANG_UI_LANDING = (typeof LANG_TOGGLE_ON_LANDING === 'undefined') || LANG_TOGGLE_ON_LANDING;
+
+if (LANG_UI) document.querySelectorAll('.lc-wrap').forEach(wrap => {
+	const box = document.createElement('span');
+	box.className = 'lang-toggle';
+	box.setAttribute('role', 'group');
+	box.setAttribute('aria-label', 'Language / Idioma');
+	box.innerHTML =
+		'<button type="button" class="lang-opt" data-lang="en" aria-label="English">EN</button>' +
+		'<span class="lang-sep" aria-hidden="true">/</span>' +
+		'<button type="button" class="lang-opt" data-lang="es" aria-label="Español">ES</button>';
+	// inner pages have no landing state, so the toggle starts docked beside the
+	// "?"; on index.html it starts under the date and docks when the site opens
+	if (document.body.classList.contains('page')) box.classList.add('docked');
+	if (!LANG_UI_LANDING) box.classList.add('hide-landing');   // CSS hides it while undocked
+	wrap.appendChild(box);
+});
+function setLang(l) {
+	document.documentElement.lang = l;
+	localStorage.setItem('lang', l);
+	document.querySelectorAll('.lang-opt').forEach(b =>
+		b.setAttribute('aria-pressed', String(b.dataset.lang === l)));
+	dispatchEvent(new CustomEvent('langchange'));
+}
+document.querySelectorAll('.lang-opt').forEach(b =>
+	b.addEventListener('click', () => setLang(b.dataset.lang)));
+
+/* Placeholders can't hold lang spans, so any field with data-ph-en / data-ph-es
+   gets its placeholder swapped here (e.g. the contact form). */
+function applyPlaceholders() {
+	const l = document.documentElement.lang === 'es' ? 'es' : 'en';
+	document.querySelectorAll('[data-ph-en]').forEach(el => {
+		el.placeholder = el.getAttribute('data-ph-' + l) || el.getAttribute('data-ph-en');
+	});
+}
+addEventListener('langchange', applyPlaceholders);
+
+setLang(document.documentElement.lang || 'en');   // sync aria + placeholders to the pre-paint choice
+
 /* ============ "WHY THIS DATE?" — EDIT THE TEXT HERE, ONCE ============
    This fills the ? modal on every page (the #why blocks in the HTML files
    are empty shells that this script populates). Plain HTML is allowed. */
 const WHY_TEXT = `
+	<div lang="en">
 	<p><strong>What is this?</strong></p>
-	<p>These digits are the represntation of the Maya Long Count calendar. Its 
-	five positions — <em>b’ak’tun</em>, <em>k’atun</em>, <em>tun</em>, <em>winal</em>, and 
-	<em>k’in</em>, each correspond to a count of days. A <em>k’in</em> is one day; a <em>winal</em> is 20 days; 
-	a <em>tun</em> is 360 days; a <em>k’atun</em> is 7,200 days; and a <em>b’ak’tun</em> is 144,000 days. Read from left 
-	to right, the date counts larger and smaller temporal units, moving from hundreds of 
+	<p>These digits are the represntation of the Maya Long Count calendar. Its
+	five positions — <em>b’ak’tun</em>, <em>k’atun</em>, <em>tun</em>, <em>winal</em>, and
+	<em>k’in</em>, each correspond to a count of days. A <em>k’in</em> is one day; a <em>winal</em> is 20 days;
+	a <em>tun</em> is 360 days; a <em>k’atun</em> is 7,200 days; and a <em>b’ak’tun</em> is 144,000 days. Read from left
+	to right, the date counts larger and smaller temporal units, moving from hundreds of
 	thousands down to the single day.</p>
-	<p>This locates this site within another way of understanding our place in time. This 
-	system, along with other Originary timekeeping practices, emerged from the lands in 
-	which I was born. Placing it here reiterates these systems as legitimate forms of 
-	calendrical tracking on these lands now known as the Americas. Timekeeping is not neutral: 
-	it invites us into longer genealogies that precede colonial naming, persist beyond it, and 
+	<p>This locates this site within another way of understanding our place in time. This
+	system, along with other Originary timekeeping practices, emerged from the lands in
+	which I was born. Placing it here reiterates these systems as legitimate forms of
+	calendrical tracking on these lands now known as the Americas. Timekeeping is not neutral:
+	it invites us into longer genealogies that precede colonial naming, persist beyond it, and
 	continue to shape how these lands are understood.</p>
 	<p>For more info, <a href="https://www.penn.museum/sites/expedition/maya-calendars" target="_blank" rel="noopener">click here</a>.</p>
+	</div>
+	<div lang="es">
+	<p><strong>¿Qué es esto?</strong></p>
+	<p>Estos dígitos son la representación del calendario maya de Cuenta Larga. Sus
+	cinco posiciones — <em>b’ak’tun</em>, <em>k’atun</em>, <em>tun</em>, <em>winal</em> y
+	<em>k’in</em> — corresponden cada una a un conteo de días. Un <em>k’in</em> es un día; un <em>winal</em>, 20 días;
+	un <em>tun</em>, 360 días; un <em>k’atun</em>, 7,200 días; y un <em>b’ak’tun</em>, 144,000 días. Leída de izquierda
+	a derecha, la fecha cuenta unidades temporales cada vez menores, descendiendo desde cientos de
+	miles hasta el día único.</p>
+	<p>Esto sitúa a este sitio dentro de otra manera de entender nuestro lugar en el tiempo. Este
+	sistema, junto con otras prácticas Originarias de registro del tiempo, surgió de las tierras en
+	las que nací. Colocarlo aquí reafirma estos sistemas como formas legítimas de registro
+	calendárico en estas tierras hoy conocidas como las Américas. Registrar el tiempo no es neutral:
+	nos convoca a genealogías más largas que preceden al nombramiento colonial, persisten más allá de
+	él y siguen dando forma a cómo se entienden estas tierras.</p>
+	<p>Para más información, <a href="https://www.penn.museum/sites/expedition/maya-calendars" target="_blank" rel="noopener">haz clic aquí</a>.</p>
+	</div>
 `;
 
 /* ============ "CUICATL" EXPLAINER — EDIT THIS TEXT HERE, ONCE ============
@@ -150,25 +229,47 @@ const WHY_TEXT = `
    without touching WHY_TEXT above; the two are separate. Styling is inherited
    from the shared .why-modal / .why-card classes, so you only edit words. */
 const CUICATL_TEXT = `
+	<div lang="en">
 	<p><strong>What is Cuicatl?</strong></p>
-	<p><em>Cuicatl</em> is a Nahuatl word commonly translated as song, singing, or music. 
-	In historical Nahua sources, it names a broad field where voice, poetry, rhythm, dance, 
-	and memory meet. The phrase <em>in xōchitl in cuīcatl</em> — “flower and song” — is often 
-	used to describe poetry or art. Contemporary works such as Gabriel Pareyón’s <em>Xochicuicatl 
-	cuecuechtli</em> and <em>Chicueyi Cuicatl</em> continue to study and dialogue with this longer 
+	<p><em>Cuicatl</em> is a Nahuatl word commonly translated as song, singing, or music.
+	In historical Nahua sources, it names a broad field where voice, poetry, rhythm, dance,
+	and memory meet. The phrase <em>in xōchitl in cuīcatl</em> — “flower and song” — is often
+	used to describe poetry or art. Contemporary works such as Gabriel Pareyón’s <em>Xochicuicatl
+	cuecuechtli</em> and <em>Chicueyi Cuicatl</em> continue to study and dialogue with this longer
 	expressive history.</p>
+	</div>
+	<div lang="es">
+	<p><strong>¿Qué es el Cuicatl?</strong></p>
+	<p><em>Cuicatl</em> es una palabra náhuatl que suele traducirse como canto, cantar o música.
+	En las fuentes nahuas históricas, nombra un campo amplio donde se encuentran la voz, la poesía,
+	el ritmo, la danza y la memoria. La expresión <em>in xōchitl in cuīcatl</em> — «flor y canto» —
+	se usa a menudo para referirse a la poesía o al arte. Obras contemporáneas como <em>Xochicuicatl
+	cuecuechtli</em> y <em>Chicueyi Cuicatl</em>, de Gabriel Pareyón, siguen estudiando y dialogando
+	con esta historia expresiva más larga.</p>
+	</div>
 `;
 
 /* ============ "WEBSITE DESIGN" (footer) — EDIT THE TEXT HERE, ONCE ============
    Opens from the "?" beside "Website design" in the footer on every page. */
 const DESIGN_TEXT = `
+	<div lang="en">
 	<p><strong>Webdesign Credits:</strong></p>
-	<p>Website designed by J.E. Hernández based on work done as 
-	<a href="https://www.yslas.music/" target="_blank" rel="noopener">Yslas</a>, produced by 
-	<a href="https://silbaca.tv/" target="_blank" rel="noopener">Sílbaca</a>. Inspired 
+	<p>Website designed by J.E. Hernández based on work done as
+	<a href="https://www.yslas.music/" target="_blank" rel="noopener">Yslas</a>, produced by
+	<a href="https://silbaca.tv/" target="_blank" rel="noopener">Sílbaca</a>. Inspired
 	by <a href="https://www.404zero.com/" target="_blank" rel="noopener">404.zero</a>.</p>
 	<p>If you're interested in website design like this for your own project, please
-	don't hesitate to <a href="/contact" target="_blank" rel="noopener">contact me</a>.
+	don't hesitate to <a href="/contact" target="_blank" rel="noopener">contact me</a>.</p>
+	</div>
+	<div lang="es">
+	<p><strong>Créditos de diseño web:</strong></p>
+	<p>Sitio web diseñado por J.E. Hernández a partir del trabajo realizado como
+	<a href="https://www.yslas.music/" target="_blank" rel="noopener">Yslas</a>, producido por
+	<a href="https://silbaca.tv/" target="_blank" rel="noopener">Sílbaca</a>. Inspirado
+	en <a href="https://www.404zero.com/" target="_blank" rel="noopener">404.zero</a>.</p>
+	<p>Si te interesa un diseño web como este para tu propio proyecto, no dudes en
+	<a href="/contact" target="_blank" rel="noopener">contactarme</a>.</p>
+	</div>
 `;
 
 /* Wire a "?" button to its modal. The button (<button class="why-btn" id="...">)

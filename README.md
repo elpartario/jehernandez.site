@@ -58,9 +58,14 @@ the skull.
   track loops through a 0.5s self-crossfade (no harsh cut), and turning it off
   eases the skull's and background's reactivity out. (See
   [DOCUMENTATION.md §8.8](DOCUMENTATION.md).)
+- **Bilingual (EN / ES)**: an "EN / ES" toggle by the date switches the whole
+  site between English and Mexican Spanish. Both languages live in every page;
+  CSS shows the active one, so switching is instant (no reload). Default +
+  persistence via `LANG_DEFAULT` in `js/theme-init.js`. Full guide:
+  [DOCUMENTATION.md §8.11](DOCUMENTATION.md).
 - **Every page** carries the long-count date, the menu and footer (both
-  injected from single sources in `js/site.js`), the theme toggle, and the
-  theme-aware mini corner skull.
+  injected from single sources in `js/site.js`), the theme + language toggles,
+  and the theme-aware mini corner skull.
 - **Serve it, don't double-click it.** Internal links are clean and
   root-absolute (`/about`), which a browser can only resolve over http — so use
   Netlify, GitHub Pages, or `python -m http.server` (DOCUMENTATION.md §1.8).

@@ -43,6 +43,7 @@ The [README](README.md) is the short version; this is the complete one.
    - [8.8 The audio: three tracks + the Mayan-numeral selector](#88-the-audio-three-tracks--the-mayan-numeral-selector)
    - [8.9 The background-attractor morph button](#89-the-background-attractor-morph-button-bottom-center)
    - [8.10 The frozen-background backdrop (inner pages)](#810-the-frozen-background-backdrop-inner-pages)
+   - [8.11 The EN / ES language toggle](#811-the-en--es-language-toggle)
 9. [Security notes](#9-security-notes)
 10. [Changelog](#10-changelog)
 
@@ -1670,6 +1671,7 @@ re-selecting never restarts it), and `selectTrack()` only crossfades gains;
   | vertical position | `#tracks` `--tnum-center` | distance from the screen bottom to the column's center; bigger = higher |
   | spacing between numerals | `#tracks` `--tnum-spread` | center-to-center gap, in `em` so it scales with the numeral size |
   | how far they hide behind the tepo | `#tracks` `--tnum-tuck` | bigger = they start further left / more buried before sliding out |
+  | click-target height (mis-click fix) | `#tracks` `--tnum-hit-clip` | % of empty space trimmed off the **top** of each numeral's clickable area; bigger = tighter to the glyph |
   | numeral size | `.tnum` `font-size` | a `clamp()` — scales with screen |
   | color (rest / hover) | `.tnum` `color` / `.tnum:hover` | uses the theme accent vars |
   | slide-in stagger | `.tnum:nth-child()` `--tnum-delay` | when each numeral appears (`0.02s` / `0.10s` / `0.18s`) |
@@ -1695,6 +1697,18 @@ re-selecting never restarts it), and `selectTrack()` only crossfades gains;
     per-screen gaps. Bigger = a taller, looser column.
   - **`--tnum-tuck`** — how far left the numerals sit while hidden (`2.4em`),
     i.e. how far behind the teponaztli they're buried before they emerge.
+  - **`--tnum-hit-clip`** — the **mis-click fix** (`40%`). The MayanNumerals
+    glyphs sit at the *bottom* of a tall em box, so every numeral button has a
+    big empty gap above its glyph. That gap was still clickable and reached up
+    into the numeral above, so aiming at one numeral could land on its neighbor.
+    This value is the percentage of each button trimmed off the **top** by a
+    `clip-path: inset(<clip> 0 0 0)` in `.tnum` — and because `clip-path` clips
+    **pointer events as well as painting**, the trimmed strip stops being
+    clickable, leaving a hit target centred on the visible glyph. **Raise it to
+    tighten the click area toward the glyph; lower it if the top of the glyph
+    ever looks cut off.** It reshapes only the hit/paint box — the numerals'
+    positions and spacing are untouched. (If you ever swap in a numeral font
+    whose glyphs are vertically centered, set it to `0%`.)
   - **Stacking** — `#tracks` is `z-index: 16`: above the attractor square
     (`#bgBtn`, 15) so it's never hidden by it, but below the teponaztli
     (`#soundT`, 17) so the numerals still slide out from *behind* the drum.
@@ -1827,6 +1841,108 @@ on top**, which is why the tint gradient is listed before the shot.)
 
 ---
 
+### 8.11 The EN / ES language toggle
+
+The whole site is bilingual (English / Mexican Spanish) with **no build step and
+no translation service**: both languages live in the page at once, and CSS shows
+only the active one. The "EN / ES" control sits in the header next to the "?".
+
+**How it works — the core idea.** Every translatable bit of text exists twice,
+each copy tagged with a standard `lang` attribute (`lang="en"` / `lang="es"`).
+One CSS rule in `css/site.css` hides whichever doesn't match the page's
+`<html lang>`:
+
+```css
+html[lang="en"] [lang="es"], html[lang="es"] [lang="en"] { display: none; }
+```
+
+So switching language is just **flipping `<html lang>`** — CSS instantly shows
+the matching copies everywhere. No re-rendering, no reload.
+
+**The pieces:**
+- **Pre-paint default** — `js/theme-init.js` (already loaded in every `<head>`)
+  sets `<html lang>` from `localStorage('lang')` before the first paint, so
+  there's no wrong-language flicker. Change `LANG_DEFAULT` there (`'en'`/`'es'`)
+  for the first-time-visitor default.
+- **Turning the EN / ES control off — two switches**, both in `js/theme-init.js`
+  right under `LANG_DEFAULT`:
+
+  | Switch | `false` does what |
+  |---|---|
+  | `LANG_TOGGLE` | **Removes EN / ES entirely** — the whole feature is off and the site is simply `LANG_DEFAULT` everywhere |
+  | `LANG_TOGGLE_ON_LANDING` | Removes it **from the skull landing only**; it still appears once the site opens and on every inner page |
+
+  Important: these only hide the **control**. Both languages stay in the pages
+  either way — visitors just can't switch, and see `LANG_DEFAULT`. So flipping
+  `LANG_TOGGLE` off is a safe, reversible way to shelve the feature without
+  touching any content. (Mechanically: `LANG_TOGGLE` skips the injection in
+  `js/site.js`; `LANG_TOGGLE_ON_LANDING` adds `.hide-landing`, and the CSS rule
+  `.lang-toggle.hide-landing:not(.docked)` hides it — "not docked" *is* the
+  landing state.)
+- **The toggle** — injected by `js/site.js` into `.lc-wrap` on every page.
+  Clicking sets `<html lang>`, saves it to `localStorage('lang')`, and fires a
+  `langchange` event. The **selected** language is bold + lit and the other
+  faded — that's pure CSS (`html[lang="…"] .lang-opt[data-lang="…"]`), and it
+  inherits the date's color (accent on the landing, ink on pages).
+- **It has two homes, and two sizes.** On the **landing** it hangs centered
+  *below* the date — it's `position: absolute`, so it's out of the flex row and
+  the date stays perfectly centered — and it's **half size** there
+  (`.lang-toggle` `font-size: 0.4em`, a deliberate footnote under the date).
+  Once the site opens it **docks** inline *beside the "?"* at full size
+  (`.lang-toggle.docked` `font-size: 0.8em`), which is also what every inner
+  page uses. Both sizes are `em`, i.e. a fraction of the long-count date's own
+  size, so they scale with it.
+  Inner pages have no landing, so `site.js` adds `.docked` immediately; on
+  `index.html`, `dockLang()` (called from `setOverlay`) fades it out at the old
+  spot, moves it while invisible, and fades it back in at the new one. **The
+  300ms in `dockLang()` must match `.lang-toggle`'s `opacity` transition in
+  `css/site.css`** — change both together or you'll see it jump.
+- **It fades in on the landing at 3s**, just after the skull finishes fading in
+  (`CFG.fadeSec`, 2.4s), reusing the hints' `hintIn` animation. The rule is in
+  `index.html` and scoped to `body:not(.entered)`, so it only runs on the *first*
+  landing — when you come back from the site later it's simply there. (That
+  scoping is also load-bearing: an always-on animation's opacity fill would
+  override `dockLang()`'s fade.) Re-time it by changing the `3s`.
+- **No jitter when switching.** Bold is wider than regular, so lighting up a
+  language would re-flow the pair. `.lang-opt` has `min-width: 1.9em` +
+  `text-align: center`, which reserves the bold width in both states so nothing
+  moves. Raise it if you add a longer code (e.g. `POR`).
+- **`langchange` event** — for the few things CSS can't swap: the teponaztli
+  caption on the landing (localized in `index.html`) and form **placeholders**
+  (any field with `data-ph-en` / `data-ph-es`, handled generically in
+  `js/site.js`) listen for it.
+
+**How to edit or add translations:**
+- **Prose in an HTML page** (bios, program notes, headings) — each block is two
+  siblings, e.g.
+  ```html
+  <p lang="en">English…</p>
+  <p lang="es">Español…</p>
+  ```
+  Edit the text in place. For a short inline bit, use spans instead:
+  `<span lang="en">home</span><span lang="es">inicio</span>`.
+- **Menu / footer / work-nav labels** (`js/site.js`) — a label is either a
+  plain string (same in both languages) or a `{ en, es }` pair; the `t()` helper
+  turns a pair into the two lang spans. Edit the strings in `MENU_LINKS`,
+  `FOOTER_LINKS`, `WORK_NAV`.
+- **The "?" modals** (`WHY_TEXT`, `CUICATL_TEXT`, `DESIGN_TEXT` in `js/site.js`)
+  — each holds an English `<div lang="en">…</div>` and a Spanish
+  `<div lang="es">…</div>`; edit whichever you want.
+- **A form placeholder** — set `data-ph-en` and `data-ph-es` on the input (the
+  visible `placeholder` is just the initial fallback).
+
+**Adding a whole third language** (say French): add `LANG_DEFAULT` options and a
+third `.lang-opt` button in the toggle markup (`js/site.js`), extend the CSS
+hide-rule to cover the new code, and add `lang="fr"` copies of the text. The
+mechanism doesn't otherwise care how many languages there are.
+
+**Note:** proper nouns are deliberately left untranslated — piece titles,
+institution names, and the citations under PRESS on the About page (those are
+the real titles of English-language articles), so in Spanish they still show in
+English on purpose.
+
+---
+
 ## 9. Security notes
 
 The honest summary: **a static site like this has almost no attack surface of
@@ -1870,6 +1986,50 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-13 — language toggle: landing size, fade-in, off-switches
+- **Half size on the landing only** — `.lang-toggle` is `0.4em` under the date
+  and `0.8em` once `.docked` (the overlay and every inner page), so it reads as
+  a footnote on the skull screen and normally everywhere else.
+- **Fades in at 3s on the landing**, just after the skull's fade
+  (`body:not(.entered) .lang-toggle` reuses the `hintIn` animation; scoped so it
+  only runs on the first landing and can't fight `dockLang()`'s fade).
+- **Two off-switches** in `js/theme-init.js`: `LANG_TOGGLE` (false = the whole
+  EN/ES feature off; site stays `LANG_DEFAULT`) and `LANG_TOGGLE_ON_LANDING`
+  (false = hidden on the landing only). Both only hide the control — the
+  translations stay in the pages, so it's reversible at any time. Details §8.11.
+
+### 2026-07-13 — language toggle polish + EN typography
+- **Toggle no longer breaks the centered date.** On the landing it now hangs
+  centered *below* the long-count date (absolute, out of the flex row); it
+  fades out, moves, and fades back in beside the "?" when the site opens
+  (`dockLang()` in `index.html` + `.lang-toggle.docked` / `.fade` in CSS).
+  Inner pages start docked.
+- **EN / ES no longer shifts** when the selected language goes bold —
+  `.lang-opt` reserves the bold width (`min-width: 1.9em` + centered text).
+- **Fixed EN spacing** where `</em>` ran straight into the next word (`…</em>was`
+  → `…</em> was`, and `</em>-` → `</em> —`) across 9 work pages.
+
+### 2026-07-13 — EN / ES bilingual toggle (full site)
+- Added an **English / Spanish (Mexican) toggle** in the header next to the "?".
+  Both languages live in every page; a CSS rule hides the inactive one
+  (`html[lang="en"] [lang="es"], html[lang="es"] [lang="en"] { display:none }`),
+  so switching just flips `<html lang>`. Pre-paint default + persistence in
+  `js/theme-init.js` (`LANG_DEFAULT`) and `localStorage('lang')`; toggle injected
+  by `js/site.js` with a `langchange` event for the teponaztli caption and form
+  placeholders. Chrome strings (menu/footer/work-nav/modals) became `{en,es}` or
+  dual `lang` blocks; all page prose and the 16 program notes got Spanish drafts.
+  Proper nouns and the PRESS citations are intentionally left in English. Full
+  details in §8.11.
+
+### 2026-07-13 — numeral click-target fix
+- **Fixed mis-clicks between the Mayan numerals.** Their glyphs sit at the
+  bottom of a tall em box, so the empty top of each button was clickable and
+  overlapped the numeral above. Added `clip-path: inset(var(--tnum-hit-clip) 0
+  0 0)` to `.tnum` (default `40%`), which trims that empty top off both the
+  paint and the **pointer-event** area, centring each hit target on its glyph.
+  Purely a hit/paint-box change — positions and spacing are untouched. Knob +
+  explanation in §8.8.
 
 ### 2026-07-13 — backdrop fix (light + dark), uniform arrows, doc audit
 - **Fixed the frozen backdrop not showing on inner pages.** Its CSS had gone

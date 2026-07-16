@@ -97,6 +97,15 @@
 		50% { transform: translateX(-50%) translateY(9px); }
 	}
 
+	/* The EN/ES toggle under the date fades in at 3s — just after the skull has
+	   finished fading in (CFG.fadeSec, 2.4s) — reusing the hints' fade. Scoped to
+	   :not(.entered) so it only happens on the FIRST landing: coming back from the
+	   site later, it's simply there (and the animation's opacity fill would
+	   otherwise fight dockLang()'s fade). Change the 3s to re-time it. */
+	body:not(.entered) .lang-toggle {
+		animation: hintIn 1.1s ease-out 3s both;
+	}
+
 	/* on the landing the menu rides with the overlay: shown while the site
 	   (popover) is open, hidden on the black scene — so it toggles on/off as
 	   the corner skull switches between them */
@@ -489,8 +498,8 @@ body.bg-ready #bgBtn .morph-hint:not(.retired) {
 	<canvas id="gl"></canvas>
 
 	<div id="skullHit" role="button" tabindex="0" aria-label="Open site info"></div>
-	<div id="hintDrag" aria-hidden="true">(drag your finger across the screen)</div>
-	<div id="hint" aria-hidden="true">(click the skull)</div>
+	<div id="hintDrag" aria-hidden="true"><span lang="en">(drag your finger across the screen)</span><span lang="es">(desliza el dedo por la pantalla)</span></div>
+	<div id="hint" aria-hidden="true"><span lang="en">(click the skull)</span><span lang="es">(haz clic en el cráneo)</span></div>
 	<div id="hintTepo" aria-hidden="true">↓</div>
 
 	<div class="lc-wrap">
@@ -528,7 +537,7 @@ body.bg-ready #bgBtn .morph-hint:not(.retired) {
 	<div id="overlay">
 		<div class="sheet">
 			<h1>J.E. Hernández</h1>
-			<p>J.E. Hernández (b. 1993) is a Mexican-born, San Diego/Houston-based composer,
+			<p lang="en">J.E. Hernández (b. 1993) is a Mexican-born, San Diego/Houston-based composer,
 			cinematographer, researcher and ethnographer whose practice bridges inner and outer
 			genealogies through sound and multi-disciplinary work. His music has been featured by
 			the Tanglewood Music Center, the Kennedy Center, Lincoln Center, Opera Theatre of
@@ -536,21 +545,30 @@ body.bg-ready #bgBtn .morph-hint:not(.retired) {
 			variety of films; recent projects include <em>Ilnamikilispan</em>, <em>&#8217;Ux Winal</em>,
 			and <em>East End Echoes Vol.&nbsp;1</em>. He is currently pursuing a PhD in Music
 			Composition at UC San Diego.</p>
+			<p lang="es">J.E. Hernández (n. 1993) es un compositor, cinematógrafo, investigador y
+			etnógrafo nacido en México y radicado entre San Diego y Houston, cuya práctica tiende
+			puentes entre genealogías internas y externas a través del sonido y el trabajo
+			multidisciplinario. Su música ha sido presentada por el Tanglewood Music Center, el
+			Kennedy Center, el Lincoln Center, la Opera Theatre of Saint Louis, la Houston Grand
+			Opera, el Contemporary Arts Museum Houston y en una amplia variedad de películas; entre
+			sus proyectos recientes se encuentran <em>Ilnamikilispan</em>, <em>&#8217;Ux Winal</em>
+			y <em>East End Echoes Vol.&nbsp;1</em>. Actualmente cursa un doctorado en Composición
+			Musical en UC San Diego.</p>
 
 			<!-- portfolio: same embeds, same order, as the .music home page -->
 			<div class="portfolio">
 				<div class="pitem">
-				<p class="ptitle"><a href="/work/voces-fantasmas">Voces Fantasmas (excerpt)</a></p>
+				<p class="ptitle"><a href="/work/voces-fantasmas">Voces Fantasmas <span lang="en">(excerpt)</span><span lang="es">(fragmento)</span></a></p>
 				<iframe class="video" loading="lazy" title="Voces Fantasmas excerpt" src="https://player.vimeo.com/video/668698189?h=37551d117a&amp;app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="/work/desert-shelter">Desert Shelter (excerpt)</a></p>
+				<p class="ptitle"><a href="/work/desert-shelter">Desert Shelter <span lang="en">(excerpt)</span><span lang="es">(fragmento)</span></a></p>
 				<iframe class="video" loading="lazy" title="Desert Shelter excerpt" src="https://player.vimeo.com/video/819247136?h=ae5a2ee279&amp;app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="/work/mechanisms">Mechanisms — &#8220;Something&#8217;s Wrong With Roe&#8221; (excerpt)</a></p>
+				<p class="ptitle"><a href="/work/mechanisms">Mechanisms — &#8220;Something&#8217;s Wrong With Roe&#8221; <span lang="en">(excerpt)</span><span lang="es">(fragmento)</span></a></p>
 				<iframe class="video" loading="lazy" title="Mechanisms excerpt" src="https://player.vimeo.com/video/973614960?app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
@@ -565,17 +583,17 @@ body.bg-ready #bgBtn .morph-hint:not(.retired) {
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="/work/double-refraction">Double Refraction (excerpt)</a></p>
+				<p class="ptitle"><a href="/work/double-refraction">Double Refraction <span lang="en">(excerpt)</span><span lang="es">(fragmento)</span></a></p>
 				<iframe class="video" loading="lazy" title="Double Refraction excerpt" src="https://player.vimeo.com/video/818229192?h=a0d14bbf1c&amp;app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="/work/soul-echoes">Soul Echoes — &#8220;blood&#8221; (excerpt)</a></p>
+				<p class="ptitle"><a href="/work/soul-echoes">Soul Echoes — &#8220;blood&#8221; <span lang="en">(excerpt)</span><span lang="es">(fragmento)</span></a></p>
 				<iframe class="video" loading="lazy" title="Soul Echoes excerpt" src="https://player.vimeo.com/video/960925135?app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
 				<div class="pitem">
-				<p class="ptitle"><a href="/work/helah">Helah (excerpt)</a></p>
+				<p class="ptitle"><a href="/work/helah">Helah <span lang="en">(excerpt)</span><span lang="es">(fragmento)</span></a></p>
 				<iframe class="video" loading="lazy" title="Helah excerpt" src="https://player.vimeo.com/video/850743444?app_id=122963" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
 				</div>
 
@@ -589,16 +607,16 @@ body.bg-ready #bgBtn .morph-hint:not(.retired) {
 				<iframe loading="lazy" style="height:300px" title="Seis Bagatelas on SoundCloud" src="https://w.soundcloud.com/player/?visual=true&amp;url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F945079717&amp;show_artwork=true"></iframe>
 				</div>
 
-				<p class="pwide"><a href="/work">featured work</a> &nbsp;·&nbsp; <a href="/flow">full list of works</a></p>
+				<p class="pwide"><a href="/work"><span lang="en">featured work</span><span lang="es">obra destacada</span></a> &nbsp;·&nbsp; <a href="/flow"><span lang="en">full list of works</span><span lang="es">lista completa de obras</span></a></p>
 			</div>
 
-			<h2>links</h2>
+			<h2><span lang="en">links</span><span lang="es">enlaces</span></h2>
 			<p><a href="https://www.alkabil.audio" target="_blank" rel="noopener">alkabil.audio</a></p>
-			<p><a href="about">Bio</a></p>
-			<p><a href="work">My Work</a></p>
-			<p><a href="contact">Contact Me</a></p>
-			<p><a href="https://alkabilmusic.square.site/" target="_blank" rel="noopener">Buy My Music</a></p>
-			<p>Website design info <button class="why-btn" id="designBtn" aria-label="About the website design">?</button></p>
+			<p><a href="about"><span lang="en">Bio</span><span lang="es">Biografía</span></a></p>
+			<p><a href="work"><span lang="en">My Work</span><span lang="es">Mi obra</span></a></p>
+			<p><a href="contact"><span lang="en">Contact Me</span><span lang="es">Contáctame</span></a></p>
+			<p><a href="https://alkabilmusic.square.site/" target="_blank" rel="noopener"><span lang="en">Buy My Music</span><span lang="es">Compra mi música</span></a></p>
+			<p><span lang="en">Website design info</span><span lang="es">Info de diseño del sitio</span> <button class="why-btn" id="designBtn" aria-label="About the website design">?</button></p>
 			<p class="muted">© J.E. Hernández <span class="year"></span></p>
 		</div>
 	</div>
@@ -1164,6 +1182,15 @@ void main(){
 	// The teponaztli starts/stops the music; the numerals switch tracks.
 	const soundT = document.getElementById('soundT');
 	const soundCap = soundT.querySelector('.cap');
+	// caption is language-aware: the "turn on" prompt unless audio is playing.
+	const CAP = { en: { on: '(audio on)', off: '(audio off)' },
+	              es: { on: '(activar audio)', off: '(apagar audio)' } };
+	function updateCap(){
+		const l = document.documentElement.lang === 'es' ? 'es' : 'en';
+		soundCap.textContent = (audioStarted && !muted) ? CAP[l].off : CAP[l].on;
+	}
+	updateCap();
+	addEventListener('langchange', updateCap);   // re-caption when EN/ES flips
 	const numerals = [...document.querySelectorAll('.tnum')];
 	function updateNumerals(){
 		numerals.forEach(b => b.classList.toggle('active', +b.dataset.track === activeTrack));
@@ -1186,7 +1213,7 @@ void main(){
 		document.body.classList.toggle('audio-on', !muted);   // slides the numerals out/in
 		soundT.setAttribute('aria-pressed', String(!muted));
 		soundT.setAttribute('aria-label', muted ? 'audio on' : 'audio off');
-		soundCap.textContent = muted ? '(audio on)' : '(audio off)';
+		updateCap();
 	});
 	numerals.forEach(btn => btn.addEventListener('click', e => {
 		e.stopPropagation();
@@ -1261,9 +1288,25 @@ void main(){
 		} catch (e) { /* storage full / blocked — skip, inner pages fall back to solid color */ }
 	}
 
+	/* The EN/ES toggle lives under the date on the landing and beside the "?" once
+	   the site is open. Fade it out at the old spot, move it while it's invisible,
+	   then fade it back in at the new one (the 300ms matches .lang-toggle's
+	   opacity transition in css/site.css — keep the two in step). Queried lazily
+	   because js/site.js injects it. */
+	function dockLang(docked){
+		const box = document.querySelector('.lang-toggle');
+		if (!box) return;
+		box.classList.add('fade');
+		setTimeout(() => {
+			box.classList.toggle('docked', docked);
+			box.classList.remove('fade');
+		}, 300);
+	}
+
 	function setOverlay(on){
 		overlay.classList.toggle('open', on);
 		document.body.classList.toggle('overlay-open', on);
+		dockLang(on);
 		// the whole scene (and the music) freezes behind the overlay page
 		if (on) {
 			captureBackground();   // stash the frozen frame for the inner pages
