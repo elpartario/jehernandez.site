@@ -226,6 +226,17 @@
 	   Increase this to bury them farther behind it before they emerge. */
 	--tnum-tuck: 2.4em;
 
+	/* The MayanNumerals glyphs sit at the BOTTOM of a tall em box, so each button
+	   has a big empty gap ABOVE its glyph. That gap is still clickable and reaches
+	   up into the numeral above, so aiming at one numeral can catch its neighbor.
+	   --tnum-hit-clip trims that empty top off each button's CLICK area (and its
+	   render) via clip-path in .tnum below, leaving the hit target centered on the
+	   visible glyph. It's the % of each button's height removed from the top:
+	   RAISE it to tighten the click area toward the glyph; LOWER it if the top of
+	   the glyph ever looks cut off. Spacing is unaffected (this only reshapes the
+	   hit/paint box, not where the numerals sit). */
+	--tnum-hit-clip: 40%;
+
 	left:
 		calc(
 			2.5vmax
@@ -260,6 +271,12 @@
 	font-family: 'MayanNumerals', serif;
 	font-size: clamp(20px, 3.4vmax, 46px);
 	line-height: 1;
+
+	/* trim the empty top off the click + paint box so the hit target sits on the
+	   visible glyph, not the tall gap above it (knob: --tnum-hit-clip on #tracks).
+	   clip-path clips pointer events too, so the trimmed area is no longer
+	   clickable — which is what stops the mis-clicks onto the numeral below. */
+	clip-path: inset(var(--tnum-hit-clip, 40%) 0 0 0);
 
 	color: var(--color-icon);
 	background: none;
