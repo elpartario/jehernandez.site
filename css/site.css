@@ -181,7 +181,7 @@ html[lang="es"] [lang="en"] { display: none; }
 	gap: 0.3em;
 	/* LANDING size — deliberately small so it stays a footnote under the date.
 	   (em = a fraction of the long-count date's own size, so it scales with it.) */
-	font-size: 0.6em;
+	font-size: 0.5em;
 	letter-spacing: 0.05em;
 	white-space: nowrap;
 	transition: opacity 0.3s ease;
