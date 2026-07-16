@@ -241,10 +241,10 @@ if (topBtn) topBtn.addEventListener('click', () => scrollTo({ top: 0, behavior: 
 if (document.body.classList.contains('page')) {
 	const shot = sessionStorage.getItem('bgShot');
 	if (shot) {
-		const bg = document.createElement('div');
-		bg.id = 'pageBgShot';
-		bg.style.backgroundImage = 'url(' + shot + ')';
-		document.body.insertBefore(bg, document.body.firstChild);
+		// hand the shot to CSS as a custom property; css/site.css paints it as the
+		// BODY's own background (behind all content, no z-index games) with the
+		// themed overlay tint layered on top — see `body.page.has-bgshot` there.
+		document.body.style.setProperty('--bgshot-url', 'url("' + shot + '")');
 		document.body.classList.add('has-bgshot');
 	}
 }

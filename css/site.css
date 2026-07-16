@@ -302,6 +302,30 @@ html.dark #themeT .moon { opacity: 0; transform: rotate(90deg) scale(0.6); }
 
 body.page { background: var(--color-page); color: var(--ink); }
 
+/* ============ frozen-background backdrop (all inner pages) ============
+   index.html screenshots its frozen scene into sessionStorage each time the
+   overlay opens; js/site.js then hands that shot to this rule as --bgshot-url
+   and adds .has-bgshot. The shot is painted as the BODY's own background — so
+   it always sits behind every element, with no z-index/stacking fragility —
+   and a tint layer is stacked ON TOP of it in the same background-image (the
+   first layer paints over the second). The tint is the SAME rgba the canvas
+   index uses for its overlay, and --color-overlay flips with the theme, so
+   this reads correctly in BOTH light and dark. Visitors who never entered the
+   landing have no shot, so .has-bgshot is absent and the solid --color-page
+   background above is used instead.
+   • To change how much of the shot shows through, edit the 0.86 (both stops
+     must match; lower = more of the screenshot visible).
+   • background-attachment: fixed keeps it still while the page scrolls. */
+body.page.has-bgshot {
+	background-image:
+		linear-gradient(rgba(var(--color-overlay), 0.86), rgba(var(--color-overlay), 0.86)),
+		var(--bgshot-url);
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-attachment: fixed;
+}
+
 .sheet {
 	max-width: 70rem;
 	margin: 0;
