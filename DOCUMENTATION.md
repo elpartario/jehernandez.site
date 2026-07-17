@@ -2149,9 +2149,15 @@ are grouped summaries; dates before the first tracked day are approximate.
   it looked stretched/zoomed. Now a `position: fixed` pseudo-element (reliable on
   mobile, and exactly viewport-sized, so `cover` measures the viewport).
 - **Mobile menu now always fits on one line.** Spanish is ~19% wider than English
-  across the six labels, which was overflowing the bar. The font/gap now scale
-  with the viewport and are *capped* at their previous values, so it never grows —
-  only shrinks on narrow screens.
+  across the six labels. The font/gap scale with the viewport and are capped, so
+  the row never grows past its ceiling — it only shrinks on narrow screens.
+  **What "too big" actually was** (measured, not guessed): not the `max-width`,
+  but the **light/dark toggle in the opposite bottom corner**. On a 375px phone,
+  Spanish at the old `3.4vw` (12.75px) *overlapped* `#themeT` by 3px; `3.2vw`
+  (12px) clears it by 12px, so 3.2vw is the largest safe value. Verified in
+  Spanish at 320 / 375 / 430px: single line, no overflow, 12–19px of clearance.
+  If you add a longer language, lower the vw value and re-check the gap to
+  `#themeT` on a 375px screen.
 
 ### 2026-07-16 — bio text wraps under the headshot + CV link
 - **About page, desktop:** the headshot now **floats right** and the bio wraps

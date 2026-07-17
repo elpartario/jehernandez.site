@@ -290,15 +290,19 @@ body.page .menu a:hover { color: var(--color-main); }
 		white-space: nowrap;
 		justify-content: flex-end;
 		max-width: calc(100vw - 5vmax);
-		/* Sized off the VIEWPORT so the row always fits on one line — the middle
-		   value is what scales; the last value is the ceiling. The ceiling (14px /
-		   12px) is the size this was before, so it never grows, it only shrinks on
-		   narrow screens. The scaling factors are set for the LONGEST language:
-		   Spanish is ~19% wider than English (38 chars vs 32 across the six
-		   labels), so if you add a language with longer words, lower the vw
-		   numbers (not the ceiling) until it fits again. */
+		/* Sized off the VIEWPORT so the row always fits on one line: the middle
+		   value scales, the last is a ceiling.
+
+		   The real limit is NOT max-width above — it's the light/dark toggle in
+		   the opposite (bottom-left) corner. Measured on a 375px phone, Spanish
+		   (~19% wider than English: 38 chars vs 32 across the six labels) at
+		   3.4vw = 12.75px OVERLAPS the toggle by 3px; 3.2vw = 12px clears it by
+		   12px. So 3.2vw is the largest that's safe, and the numbers below are
+		   set for Spanish — English simply gets more breathing room.
+		   If you add a longer language, lower the vw value and re-check the gap
+		   to #themeT on a 375px-wide screen. */
 		gap: clamp(4px, 1.8vw, 12px);
-		font-size: clamp(9px, 2.8vw, 14px);
+		font-size: clamp(10px, 3.2vw, 14px);
 		/* translucent dark scrim so the menu reads on any background color */
 		background: rgba(0, 0, 0, 0.7);
 		padding: 0.5em 0.85em;
