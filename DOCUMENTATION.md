@@ -665,11 +665,19 @@ account tied to an **access key** — no server or backend of your own. In
 - The visible fields (`name`, `email`, `message`) and the Send button are
   unchanged styling (`.cform`); add or rename fields freely — Web3Forms emails
   whatever fields you include.
-- After sending, Web3Forms shows its own confirmation page. If you'd rather
-  return to your site, add `<input type="hidden" name="redirect" value="https://YOURDOMAIN/">`.
-- **CSP note:** the form's domain is whitelisted in `_headers`
-  (`form-action … https://api.web3forms.com`). If you ever switch form
-  providers, update that line or the submit will be blocked on Netlify.
+- **Sending never leaves your site.** A plain form POST would hand the visitor
+  to Web3Forms' own thank-you page; instead `js/site.js` intercepts the submit
+  and sends it with `fetch`. The form then briefly becomes a bold **"Message
+  sent!"** note (`.cform-note`, bilingual) and, after **4 seconds**, comes back
+  empty and ready. If sending fails, the note says so, the form **stays filled**
+  so nothing is retyped, and the message clears after 6s. Change the wording or
+  those timings in the `CONTACT FORM` block of `js/site.js`.
+  (Because it's `fetch`, the old `name="redirect"` hidden input is neither
+  needed nor used.)
+- **CSP note:** the form's domain is whitelisted in `_headers` — it now needs
+  `connect-src … https://api.web3forms.com` (the `fetch`); `form-action` is kept
+  as a harmless belt-and-braces. If you switch form providers, update those or
+  the submit is blocked on Netlify.
 
 The click-to-copy email above the form is separate: it's the `data-copy` value
 on the `.copy-email` span in `contact.html`.
@@ -685,6 +693,7 @@ jehernandez/
 ├── work.html             featured works (banners)     → /work
 ├── flow.html             full categorized list        → /flow
 ├── contact.html          email + Web3Forms form       → /contact
+├── 404.html              "page not found" (auto-used by GitHub Pages + Netlify)
 ├── work/<slug>.html ×16  one page per piece           → /work/<slug>
 ├── _redirects            Netlify redirects (/store → Square store; Netlify-only)
 ├── _headers              Netlify security headers (CSP etc.; Netlify-only, §9)
@@ -1111,6 +1120,39 @@ The space under the footer is the third value of `.sheet`'s `padding`
 (`5vmax`, commented in site.css) — one number for every page including the
 overlay; a phone-only rule right below it adds extra room so the last line
 clears the fixed bottom-right menu.
+
+**The 404 page (`404.html`).** Not an inner page at all — it's the **landing
+stripped bare**: the strangeTrig background, the long-count date with EN / ES
+under it, and a big red **"404 not found"** where the skull would be, with a
+lowercase **"go back"** link (to `/`) beneath it. No skull or heart, no
+teponaztli, no morph buttons, no audio. **Both GitHub Pages and Netlify pick up a
+root `404.html` automatically** — no config, no `_redirects` entry; just keep the
+file at the site root and don't rename it.
+
+How it gets the landing look for free: its `<body>` has **no `class="page"`**, so
+`css/site.css` styles it as the landing (black, red date, and the EN / ES toggle
+undocked — i.e. small and centered *under* the date, exactly as on the landing).
+`js/site.js` runs as usual but nearly everything no-ops: no `nav.menu`, no
+`footer.foot`, no `#whyBtn`, and the frozen-backdrop code is skipped because
+that's gated on `.page`. The one thing it *would* add is the sun/moon toggle,
+which is pointless on an always-black page, so the page's own CSS hides it.
+
+Two things to know if you edit it:
+
+- **Every path is root-absolute** (`/css/site.css`, `/js/site.js`,
+  `/assets/favicon.png`) rather than relative. A 404 is served at *whatever URL
+  the visitor mistyped* — `/work/nonsense` as easily as `/nonsense` — so relative
+  paths would resolve against the wrong folder and the page would load unstyled.
+  If you copy another page to build on, convert its paths.
+- **The background is a copy, not a shared module.** The four background shaders
+  and a `BG` settings object are inlined in `404.html`, mirroring `index.html`'s
+  shaders and `CFG.bg`. It keeps the random attractor type, the random per-load
+  A/B seeds, the mouse steering and the drift — but there's **no audio** on this
+  page (nothing could start it: the teponaztli is gone and browsers block
+  autoplay), so the audio-reactive wobble simply never fires. **If you retune the
+  attractor — the formulas, or values like `typePool`/`gain`/`ptSize`/`drift` —
+  change them in both files**, or the 404 will drift out of step with the
+  landing.
 
 ---
 
@@ -1911,6 +1953,13 @@ the matching copies everywhere. No re-rendering, no reload.
   caption on the landing (localized in `index.html`) and form **placeholders**
   (any field with `data-ph-en` / `data-ph-es`, handled generically in
   `js/site.js`) listen for it.
+- **Text written by JS at the moment it appears** can't use the `lang=""` trick
+  at all (there's no markup to hide), so it reads `<html lang>` when it fires.
+  There are small dictionaries for these in `js/site.js` — add a line per
+  language to translate one:
+  - `COPY_MSG` — the "copied to clipboard" confirmation.
+  - the `say(...)` strings in the contact-form block — "Message sent!" and the
+    error (these *do* use `lang=""` spans, since they're injected as markup).
 
 **How to edit or add translations:**
 - **Prose in an HTML page** (bios, program notes, headings) — each block is two
@@ -1986,6 +2035,27 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-13 — 404 page, no-redirect contact form, ES copy message
+- **Added `404.html`** — the **landing stripped bare**: strangeTrig background
+  (random type + seeds, mouse steering, drift), the long-count date with EN / ES
+  under it, a big red "404 not found" where the skull would be, and a lowercase
+  "go back" link. No skull/heart, teponaztli, morph buttons or audio. It gets the
+  landing styling for free by simply having no `.page` class. GitHub Pages and
+  Netlify both use a root `404.html` automatically. All its paths are
+  root-absolute, because a 404 is served at whatever URL was mistyped
+  (`/work/typo`), where relative paths would break. Its background shaders +
+  `BG` settings are a **copy** of index.html's — keep them in sync (§5).
+- **The contact form no longer redirects.** It's submitted with `fetch` instead
+  of a plain POST, so Web3Forms' thank-you page never appears: the form becomes
+  a "Message sent!" note for 4s, then returns empty. On failure the note says so
+  and the form stays filled so nothing is retyped (§1.12).
+- **"copied to clipboard" now follows the language** — it's JS-set text, so it
+  can't use the `lang=""` markup trick; it reads `<html lang>` at click time from
+  a `COPY_MSG` dictionary in `js/site.js`. Also fixed the swap to save/restore
+  `innerHTML`, so the `<u>` underline around the email survives.
+- Docs: §1.12 rewritten (redirect bullet was stale), §5 gained the 404 page, §2
+  tree + README updated, §8.11 notes the JS-set-string dictionaries.
 
 ### 2026-07-13 — language toggle: landing size, fade-in, off-switches
 - **Half size on the landing only** — `.lang-toggle` is `0.4em` under the date

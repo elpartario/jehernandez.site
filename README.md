@@ -102,7 +102,14 @@ the skull.
   homepage). `/store` forwards to the Square store on Netlify via `_redirects`.
   Link/home conventions: DOCUMENTATION.md §1.11.
 - Contact form: **Web3Forms** (emails you each submission; access key in
-  `contact.html`), works on any host — DOCUMENTATION.md §1.12.
+  `contact.html`), works on any host. Sent via `fetch`, so it never leaves the
+  site: the form briefly becomes "Message sent!" then returns empty —
+  DOCUMENTATION.md §1.12.
+- 404: `404.html` at the root — the landing stripped bare (trig background, date,
+  EN/ES, a big red "404 not found" where the skull goes, and a "go back" link).
+  Picked up automatically by both GitHub Pages and Netlify. Its paths are
+  root-absolute and its background shaders are a copy of index.html's — see
+  DOCUMENTATION.md §5.
 - Deploy: drag the folder onto https://app.netlify.com, or push to GitHub →
   Settings → Pages. Security headers for Netlify live in `_headers`.
 - Weight: **≈ 3.9 MB first paint** — skull + heart point clouds (~1.22 MB each)

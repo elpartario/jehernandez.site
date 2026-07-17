@@ -189,7 +189,7 @@ html[lang="es"] [lang="en"] { display: none; }
 .lang-toggle.docked {            /* inline beside the "?" */
 	position: static;
 	transform: none;
-	font-size: 0.5em;            /* full size everywhere except the landing */
+	font-size: 0.8em;            /* full size everywhere except the landing */
 }
 /* LANG_TOGGLE_ON_LANDING = false (js/theme-init.js): hide it on the landing
    only — "not docked" IS the landing state, so it still shows once the site
@@ -544,5 +544,11 @@ body.page.has-bgshot {
 	cursor: pointer;
 }
 .cform button:hover { background: var(--color-main); color: #fff; }
+.cform button:disabled { opacity: 0.5; cursor: default; }
+/* the "Message sent!" note that briefly replaces the form (js/site.js) */
+.cform-note {
+	margin-top: 1.5rem;
+	font-weight: 700;
+}
 
 .copy-email { cursor: pointer; }

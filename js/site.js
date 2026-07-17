@@ -322,14 +322,60 @@ function copyText(text) {
 		ok ? resolve() : reject();
 	});
 }
+/* This feedback is set from JS, so it can't use the lang="en"/lang="es" trick —
+   it reads <html lang> at click time instead. Add a line per language here. */
+const COPY_MSG = { en: 'copied to clipboard', es: 'copiado al portapapeles' };
 document.querySelectorAll('[data-copy]').forEach(el => {
 	el.addEventListener('click', () => {
 		copyText(el.dataset.copy).catch(() => {});
-		const prev = el.textContent;
-		el.textContent = 'copied to clipboard';
-		setTimeout(() => { el.textContent = prev; }, 1600);
+		// innerHTML (not textContent) so markup inside — e.g. the <u> around the
+		// email — survives the swap and is restored intact
+		const prev = el.innerHTML;
+		el.textContent = COPY_MSG[document.documentElement.lang] || COPY_MSG.en;
+		setTimeout(() => { el.innerHTML = prev; }, 1600);
 	});
 });
+
+/* ============ CONTACT FORM (Web3Forms, no redirect) ============
+   Posting the <form> normally would send the visitor to Web3Forms' own thank-you
+   page. Instead we POST it with fetch and stay put: the form briefly becomes a
+   "Message sent!" note, then comes back empty and ready. The endpoint/access key
+   still live in contact.html — this only changes HOW it's sent.
+   (CSP note: api.web3forms.com is already allowed in `connect-src`, see _headers.) */
+const cform = document.querySelector('form.cform');
+if (cform) {
+	const note = document.createElement('p');
+	note.className = 'cform-note';
+	note.hidden = true;
+	cform.parentNode.insertBefore(note, cform.nextSibling);
+
+	const say = html => { note.innerHTML = html; };
+	cform.addEventListener('submit', e => {
+		e.preventDefault();
+		const btn = cform.querySelector('button[type="submit"]');
+		if (btn) btn.disabled = true;
+		fetch(cform.action, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+			body: JSON.stringify(Object.fromEntries(new FormData(cform)))
+		})
+			.then(r => r.json())
+			.then(j => {
+				if (!j.success) throw new Error(j.message || 'failed');
+				say('<span lang="en">Message sent!</span><span lang="es">¡Mensaje enviado!</span>');
+				cform.reset();
+				cform.hidden = true; note.hidden = false;
+				setTimeout(() => { note.hidden = true; cform.hidden = false; }, 4000);   // back to the form
+			})
+			.catch(() => {
+				say('<span lang="en">Couldn&#8217;t send — please email me instead.</span>' +
+				    '<span lang="es">No se pudo enviar — mejor escríbeme por correo.</span>');
+				note.hidden = false;
+				setTimeout(() => { note.hidden = true; }, 6000);   // form stays, so nothing is retyped
+			})
+			.finally(() => { if (btn) btn.disabled = false; });
+	});
+}
 
 const topBtn = document.getElementById('topBtn');
 if (topBtn) topBtn.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
