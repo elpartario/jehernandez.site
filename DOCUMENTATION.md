@@ -1327,6 +1327,17 @@ every morph behave identically in both.
 Because the toggle only exists once the site is open, the flow is: enter the
 site → switch the theme → go back to the landing (corner skull) → it's repainted.
 
+**Turning this off (code switch, no user control):** `var THEME_ON_LANDING` in
+`js/theme-init.js`, alongside the other defaults. Set it to `false` and the
+landing ignores light/dark entirely and always wears its original look — black
+scene, red particles, red chrome — while the overlay and every inner page keep
+following the theme, and the sun/moon toggle keeps working normally. The landing
+just stops listening. Mechanically it adds `.landing-dark` to `<html>` pre-paint;
+`css/site.css` pins the `--landing-*` trio from that class, the invert rule
+excludes it (`:not(.landing-dark)`), and `index.html`'s `landingDark()` counts it
+as dark so the particles stay red and the screenshot isn't inverted. Nothing is
+deleted, so it's reversible at any time.
+
 Two halves, because WebGL can't read CSS:
 
 - **The chrome** is CSS variables — `--landing-bg`, `--landing-icon` (at rest)
@@ -2111,6 +2122,14 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-17 — landing theme off-switch
+- Added **`THEME_ON_LANDING`** to `js/theme-init.js` (code switch, no user
+  control). `false` = the landing ignores light/dark and stays black/red; the
+  overlay, inner pages and the sun/moon toggle are unaffected. Adds
+  `.landing-dark` pre-paint, which pins the `--landing-*` vars, drops out of the
+  invert rule, and makes `landingDark()` report dark. Reversible, nothing
+  deleted. (§8.1)
 
 ### 2026-07-17 — landing follows the theme, mobile backdrop fix, menu fit
 - **The landing now follows light/dark** (§8.1). Light = white scene, black

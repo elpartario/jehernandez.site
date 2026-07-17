@@ -88,6 +88,17 @@ html.dark {
 	--landing-main: #f00;
 }
 
+/* THEME_ON_LANDING = false (js/theme-init.js) adds .landing-dark, pinning the
+   landing to its original black/red whatever the theme is. Only the --landing-*
+   trio is forced, so the overlay and the inner pages keep following light/dark
+   normally. It sits after html.dark (same specificity) so it wins either way,
+   and it also drops out of the invert rule below — see the :not(.landing-dark). */
+html.landing-dark {
+	--landing-bg: #000;
+	--landing-icon: #d40000;
+	--landing-main: #f00;
+}
+
 /* ============ how the landing's particles turn black in light mode ============
    The scene is drawn with ADDITIVE blending on a black clear — that's what makes
    the particles glow, and it's why they can be red. Additive can only ever ADD
@@ -98,10 +109,12 @@ html.dark {
    become black ones. Same geometry, same accumulation, same structure — mirrored.
    So the colours JS feeds these canvases are PRE-inversion (index.html).
    canvas#mini is deliberately NOT listed: it also lives on the inner pages, where
-   it must follow --ink, so it gets its final colour straight from JS instead. */
-html:not(.dark) canvas#gl,
-html:not(.dark) canvas#swap,
-html:not(.dark) canvas#bgPrev { filter: invert(1); }
+   it must follow --ink, so it gets its final colour straight from JS instead.
+   (.landing-dark = THEME_ON_LANDING is off, so the scene stays red-on-black and
+   must NOT be inverted.) */
+html:not(.dark):not(.landing-dark) canvas#gl,
+html:not(.dark):not(.landing-dark) canvas#swap,
+html:not(.dark):not(.landing-dark) canvas#bgPrev { filter: invert(1); }
 /* smooth theme swap: site.js adds this class for ~0.7s around the toggle so
    everything cross-fades instead of snapping (and hovers stay instant otherwise) */
 html.theming, html.theming body, html.theming *, html.theming *::before {

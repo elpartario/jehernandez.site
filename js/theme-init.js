@@ -18,9 +18,20 @@ var LANG_DEFAULT = 'en';       // 'en' or 'es'      (EN / ES toggle by the date)
 var LANG_TOGGLE = true;
 var LANG_TOGGLE_ON_LANDING = true;
 
+/* ---- LANDING THEME SWITCH ----
+   false = the skull landing IGNORES light/dark and always wears its original
+   look: black scene, red particles, red chrome. The overlay and every inner
+   page still follow the theme normally, and the sun/moon toggle keeps working —
+   the landing just stops listening to it. (There's no user-facing control for
+   this; it's a code switch.) */
+var THEME_ON_LANDING = true;
+
 (function () {
 	var theme = localStorage.getItem('theme') || THEME_DEFAULT;   // null = never toggled
 	if (theme === 'dark') document.documentElement.classList.add('dark');
+
+	// pins the landing to black/red — css/site.css and index.html both key off it
+	if (!THEME_ON_LANDING) document.documentElement.classList.add('landing-dark');
 
 	var lang = localStorage.getItem('lang') || LANG_DEFAULT;
 	document.documentElement.lang = lang;   // CSS hides the other language's blocks

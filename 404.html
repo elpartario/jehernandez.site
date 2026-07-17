@@ -274,7 +274,10 @@ void main(){
 		gl.uniform1f(U(bgP, 'uDim'), 1.0);        // no morph here, so always full brightness
 		gl.uniform1f(U(bgP, 'uEdgeFade'), 0.0);   // full-screen: never edge-faded
 		// dark = red on black; light = white, which CSS inverts to dark-on-white
-		const DARK = document.documentElement.classList.contains('dark');
+		// dark either because the theme is dark, or because THEME_ON_LANDING is
+		// off (js/theme-init.js adds .landing-dark) — same rule as index.html
+		const DARK = document.documentElement.classList.contains('dark') ||
+		             document.documentElement.classList.contains('landing-dark');
 		gl.uniform3f(U(bgP, 'uBgCol'), ...(DARK ? [0.55, 0.02, 0.03] : [0.55, 0.55, 0.55]));
 		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.ONE, gl.ONE);

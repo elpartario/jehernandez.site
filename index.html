@@ -856,9 +856,17 @@ void main(){
 
 	   So SKULL_COL/BG_COL are PRE-inversion colours: white here looks black on
 	   screen. MINI_COL is the exception — the corner skull is never inverted
-	   (it's shared with the inner pages), so it's a real, final colour. */
-	let DARK = document.documentElement.classList.contains('dark');
-	addEventListener('themechange', () => { DARK = document.documentElement.classList.contains('dark'); });
+	   (it's shared with the inner pages), so it's a real, final colour.
+
+	   DARK here means "is the LANDING dark", which is true either because the
+	   theme is dark, OR because THEME_ON_LANDING is off (js/theme-init.js then
+	   adds .landing-dark, pinning the scene to black/red whatever the theme). */
+	const landingDark = () => {
+		const h = document.documentElement;
+		return h.classList.contains('dark') || h.classList.contains('landing-dark');
+	};
+	let DARK = landingDark();
+	addEventListener('themechange', () => { DARK = landingDark(); });
 	const SKULL_COL = () => DARK ? [1.0, 0.055, 0.075] : [1, 1, 1];        // inverted -> black
 	const BG_COL    = () => DARK ? [0.55, 0.02, 0.03] : [0.55, 0.55, 0.55]; // inverted -> dark grey
 	const MINI_COL  = () => DARK ? [1.0, 0.055, 0.075] : [0.02, 0.02, 0.02]; // NOT inverted: final
