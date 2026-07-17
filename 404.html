@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!-- every path here is root-absolute (/js/…, /css/…): a 404 can be served at
+	     ANY depth (e.g. /work/typo), so relative paths would break. -->
+	<script src="/js/theme-init.js"></script>
+	<title>404 not found — J.E. Hernández</title>
+	<link rel="icon" type="image/png" href="/assets/favicon.png">
+	<link rel="stylesheet" href="/css/site.css">
+	<style>
+	/* This page is the LANDING look with nothing on it: the strangeTrig
+	   background, the long-count date + EN/ES, and a big 404 where the skull
+	   would be. No skull/heart, no teponaztli, no morph buttons, no audio.
+	   Body has no .page class, so site.css gives it the black landing styling
+	   (red date, undocked EN/ES under it) for free. */
+	canvas#gl {
+		display: block;
+		position: fixed;
+		inset: 0;
+		width: 100%;      /* keeps the scene centered on phones (see DOCUMENTATION §8.5) */
+		height: 100%;
+		z-index: 1;
+	}
+
+	/* sits exactly where the skull sits on the landing: the middle of the screen */
+	#nf {
+		position: fixed;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		z-index: 5;
+		text-align: center;
+		white-space: nowrap;
+	}
+	#nf .code {
+		display: block;
+		color: var(--color-main);        /* the same red as the long-count date */
+		font-weight: 700;
+		font-size: clamp(38px, 11vmin, 120px);
+		line-height: 1;
+		letter-spacing: 0.04em;
+	}
+	#nf .back {
+		display: inline-block;
+		margin-top: 0.9em;
+		color: var(--color-icon);        /* dim at rest, lights up on hover — like the site's links */
+		font-size: clamp(14px, 2.2vmin, 20px);
+		letter-spacing: 0.08em;
+		text-decoration: none;
+	}
+	#nf .back:hover { color: var(--color-main); }
+
+	/* the sun/moon toggle would do nothing here (this page is always black),
+	   so hide the one site.js appends */
+	#themeT { display: none; }
+	</style>
+</head>
+<body>
+
+	<canvas id="gl"></canvas>
+
+	<div class="lc-wrap">
+		<span class="lc-date"></span>
+	</div>
+
+	<div id="nf">
+		<span class="code"><span lang="en">404 not found</span><span lang="es">404 no encontrado</span></span>
+		<a class="back" href="/"><span lang="en">go back</span><span lang="es">regresar</span></a>
+	</div>
+
+	<!-- ============ strangeTrig background ============
+	     A copy of the landing's background shaders. KEEP IN SYNC: if you change
+	     the attractor formulas or the BG settings below, change them in
+	     index.html too (see DOCUMENTATION §5). -->
+	<script id="vs-bg" type="x-shader/x-vertex">
+attribute float aId;
+uniform float uA, uB, uC, uD, uPhase, uScale, uPtBg, uDim;
+uniform int uTypeA;
+varying float vB;
+varying float vRad;
+float h(float n){ return fract(sin(n) * 43758.5453); }
+/* One point's final position for a given attractor type (all seven from
+   strangeTrig.tox) — see DOCUMENTATION §3.4 for the formulas and the guide. */
+vec2 iterate(int t, float x, float y, float grp, float ph){
+	for (int i = 0; i < 9; i++){
+		if (float(i) > grp + 1.0) break;
+		float px = x, py = y;
+		if (t == 0){ x = sin(px*px - py*py + uA + ph); y = cos(uC*px*py + uB + ph); }
+		else if (t == 1){ x = sin(uC*py + uA + ph); y = cos(uC*px + uB + ph); }
+		else if (t == 2){ x = sin(px*px + py*py + uA + ph); y = cos(uC*py*px*py + uB + ph); }
+		else if (t == 3){ x = sin(px*px - py*py + uA + ph); y = cos(uC*px*py*uB + ph); }
+		else if (t == 4){ x = sin(uA*0.5*py + ph) - cos(uB*0.5*px + ph); y = sin(uC*px + ph) - cos(uD*py + ph); }
+		else if (t == 5){ x = sin(uA*0.5*py + ph) + uC*cos(uA*0.5*px + ph); y = sin(uB*0.5*px + ph) + uD*cos(uB*0.5*py + ph); }
+		else { x = sin(uA*px*px - uB*py*py + ph); y = cos(uC*px*py + uD*(px+py) + ph); }
+	}
+	if (t == 4 || t == 5){ x *= 0.5; y *= 0.5; }
+	return vec2(x, y);
+}
+void main(){
+	float grp = mod(aId, 9.0);
+	float r = sqrt(h(aId + 13.7));
+	float an = h(aId + 71.3) * 6.2831853;
+	float x0 = r * cos(an);
+	float y0 = r * sin(an);
+	float ph = (fract(h(grp + 3.3) + uPhase) * 2.0 - 1.0) * 3.1415926;
+	vec2 p = iterate(uTypeA, x0, y0, grp, ph);
+	gl_Position = vec4(p.x * uScale, p.y * uScale, 0.5, 1.0);
+	gl_PointSize = uPtBg;
+	vB = (0.35 + 0.65 * h(aId + 7.7)) * uDim;
+	vRad = length(gl_Position.xy);
+}
+	</script>
+	<script id="fs-bg" type="x-shader/x-fragment">
+precision mediump float;
+uniform float uEdgeFade;
+varying float vB;
+varying float vRad;
+void main(){
+	float d = length(gl_PointCoord - 0.5);
+	float m = smoothstep(0.5, 0.05, d) * vB;
+	if (uEdgeFade > 0.0) m *= exp(-uEdgeFade * vRad * vRad);
+	gl_FragColor = vec4(m * 0.55, m * 0.02, m * 0.03, m);
+}
+	</script>
+	<script id="vs-blit" type="x-shader/x-vertex">
+attribute vec2 aXY;
+varying vec2 vUv;
+void main(){ vUv = aXY * 0.5 + 0.5; gl_Position = vec4(aXY, 0.0, 1.0); }
+	</script>
+	<script id="fs-blit" type="x-shader/x-fragment">
+precision mediump float;
+varying vec2 vUv;
+uniform sampler2D uTex;
+uniform vec2 uPx;
+uniform float uGain;
+void main(){
+	vec3 c = texture2D(uTex, vUv).rgb * 0.4;
+	c += texture2D(uTex, vUv + vec2( uPx.x,  uPx.y)).rgb * 0.15;
+	c += texture2D(uTex, vUv + vec2(-uPx.x,  uPx.y)).rgb * 0.15;
+	c += texture2D(uTex, vUv + vec2( uPx.x, -uPx.y)).rgb * 0.15;
+	c += texture2D(uTex, vUv + vec2(-uPx.x, -uPx.y)).rgb * 0.15;
+	gl_FragColor = vec4(c * uGain, 1.0);
+}
+	</script>
+
+	<script>
+	/* Background settings — the same values as index.html's CFG.bg (the subset
+	   this page uses). Keep them in sync if you retune the landing. */
+	const BG = {
+		type: 0,                   // used when typeRandom is false
+		typeRandom: true,          // pick a random type from typePool each load
+		typePool: [0, 1, 3, 6],
+		count: 55000, scale: 1.03, ptSize: 2.4, gain: 1.0,
+		A0: 0.1, B0: 3.2, C0: 1.0, D0: 0.5, ARange: 1.7, BRange: 1.7,
+		drift: 0.013, blurDiv: 2, blurPx: 1.1, seedRange: 1.6
+	};
+
+	// a random attractor AND random A/B seeds per load, exactly like the landing,
+	// so a 404 is never quite the same twice
+	if (BG.typeRandom && BG.typePool.length)
+		BG.type = BG.typePool[Math.floor(Math.random() * BG.typePool.length)];
+	const randSeed = () => (Math.random() * 2 - 1) * BG.seedRange;
+	const seedA = randSeed(), seedB = randSeed();
+
+	const canvas = document.getElementById('gl');
+	const gl = canvas.getContext('webgl', { antialias: false });
+	const dpr = Math.min(devicePixelRatio || 1, 1.5);
+	const U = (p, n) => gl.getUniformLocation(p, n);
+
+	function makeProgram(vsId, fsId, attr0){
+		const mk = (id, type) => {
+			const s = gl.createShader(type);
+			gl.shaderSource(s, document.getElementById(id).textContent);
+			gl.compileShader(s);
+			if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+				console.error('[404] shader ' + id + ':', gl.getShaderInfoLog(s));
+			return s;
+		};
+		const p = gl.createProgram();
+		gl.attachShader(p, mk(vsId, gl.VERTEX_SHADER));
+		gl.attachShader(p, mk(fsId, gl.FRAGMENT_SHADER));
+		gl.bindAttribLocation(p, 0, attr0);
+		gl.linkProgram(p);
+		return p;
+	}
+	const bgP = makeProgram('vs-bg', 'fs-bg', 'aId');
+	const blitP = makeProgram('vs-blit', 'fs-blit', 'aXY');
+
+	// one id per particle; the shader turns each id into a seeded starting point
+	const bgBuf = gl.createBuffer();
+	{
+		const ids = new Float32Array(BG.count);
+		for (let i = 0; i < ids.length; i++) ids[i] = i;
+		gl.bindBuffer(gl.ARRAY_BUFFER, bgBuf);
+		gl.bufferData(gl.ARRAY_BUFFER, ids, gl.STATIC_DRAW);
+	}
+	const quadBuf = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,-1, 1,1, -1,1]), gl.STATIC_DRAW);
+
+	// the attractor draws into a half-res buffer that's blurred on the way up
+	let fbo = null, fboTex = null, fboW = 0, fboH = 0;
+	function makeFbo(w, h){
+		if (fboTex) { gl.deleteTexture(fboTex); gl.deleteFramebuffer(fbo); }
+		fboTex = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, fboTex);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		fbo = gl.createFramebuffer();
+		gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fboTex, 0);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		fboW = w; fboH = h;
+	}
+	function resize(){
+		canvas.width = Math.round(innerWidth * dpr);
+		canvas.height = Math.round(innerHeight * dpr);
+		makeFbo(Math.max(2, Math.round(canvas.width / BG.blurDiv)),
+		        Math.max(2, Math.round(canvas.height / BG.blurDiv)));
+	}
+	addEventListener('resize', resize);
+	resize();
+
+	// mouse/touch steers A and B, same as the landing
+	const target = { x: 0.5, y: 0.42 }, sm = { x: 0.5, y: 0.42 };
+	addEventListener('pointermove', e => {
+		target.x = e.clientX / innerWidth;
+		target.y = e.clientY / innerHeight;
+	});
+	addEventListener('touchmove', e => {
+		const t = e.touches[0];
+		target.x = t.clientX / innerWidth;
+		target.y = t.clientY / innerHeight;
+	}, { passive: true });
+
+	let phase = 0, bootT = null, lastT = performance.now();
+	function frame(){
+		const now = performance.now();
+		if (bootT === null) bootT = now;
+		const dt = Math.min(0.05, (now - lastT) / 1000);
+		lastT = now;
+
+		sm.x += (target.x - sm.x) * 0.07;
+		sm.y += (target.y - sm.y) * 0.07;
+		phase = (phase + dt * BG.drift) % 1;
+		const bgFade = Math.min(1, (now - bootT) / 2000);   // gentle fade-in on load
+
+		// 1) attractor -> low-res buffer
+		gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+		gl.viewport(0, 0, fboW, fboH);
+		gl.clearColor(0, 0, 0, 1);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.useProgram(bgP);
+		gl.bindBuffer(gl.ARRAY_BUFFER, bgBuf);
+		gl.enableVertexAttribArray(0);
+		gl.vertexAttribPointer(0, 1, gl.FLOAT, false, 0, 0);
+		gl.uniform1f(U(bgP, 'uA'), BG.A0 + (sm.x - 0.5) * BG.ARange + seedA);
+		gl.uniform1f(U(bgP, 'uB'), BG.B0 + (sm.y - 0.5) * BG.BRange + seedB);
+		gl.uniform1f(U(bgP, 'uC'), BG.C0);
+		gl.uniform1f(U(bgP, 'uD'), BG.D0);
+		gl.uniform1f(U(bgP, 'uPhase'), phase);
+		gl.uniform1f(U(bgP, 'uScale'), BG.scale);
+		gl.uniform1f(U(bgP, 'uPtBg'), BG.ptSize);
+		gl.uniform1i(U(bgP, 'uTypeA'), BG.type);
+		gl.uniform1f(U(bgP, 'uDim'), 1.0);        // no morph here, so always full brightness
+		gl.uniform1f(U(bgP, 'uEdgeFade'), 0.0);   // full-screen: never edge-faded
+		gl.enable(gl.BLEND);
+		gl.blendFunc(gl.ONE, gl.ONE);
+		gl.drawArrays(gl.POINTS, 0, BG.count);
+
+		// 2) blurred upscale to the screen
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		gl.viewport(0, 0, canvas.width, canvas.height);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.disable(gl.BLEND);
+		gl.useProgram(blitP);
+		gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+		gl.enableVertexAttribArray(0);
+		gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, fboTex);
+		gl.uniform1i(U(blitP, 'uTex'), 0);
+		gl.uniform2f(U(blitP, 'uPx'), BG.blurPx / fboW, BG.blurPx / fboH);
+		gl.uniform1f(U(blitP, 'uGain'), BG.gain * bgFade);
+		gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+		requestAnimationFrame(frame);
+	}
+	frame();
+	</script>
+
+	<script src="/js/site.js"></script>
+</body>
+</html>
