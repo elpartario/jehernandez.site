@@ -7,7 +7,7 @@ the skull.
 
 ## What it does
 
-- **Landing**: black page (always black, in both themes), the strangeTrig
+- **Landing**: the strangeTrig
   attractor — ported from your `strangeTrig.tox`, all seven types selectable —
   drifting blurrily behind, today's Maya Long Count date, and the coyote
   skull — your real scan, 160,000 points — fading in at center. Hints fade in
@@ -48,8 +48,11 @@ the skull.
   line — `THEME_DEFAULT` in `js/theme-init.js`). A sun/moon toggle (bottom-
   left, next to the teponaztli on the landing overlay) cross-fades between
   them; each visitor's choice is saved, applies on every page, and overrides
-  the default. The OS preference is deliberately ignored. The landing scene
-  stays black either way.
+  the default. The OS preference is deliberately ignored. **The landing follows
+  it too**: dark = black scene with red particles/chrome, light = white scene
+  with black particles/chrome — colour only, every behavior identical. (Light
+  works by drawing the scene in white and inverting the canvas, since additive
+  blending can't darken a white page — DOCUMENTATION.md §8.1.)
 - **Audio** starts from the teponaztli (bottom-left): faded + "(turn audio
   on)" until pressed, then full red + "(turn audio off)". There are **three
   soundtracks**, chosen by **Mayan numerals 𝋡 𝋢 𝋣** that slide out from behind

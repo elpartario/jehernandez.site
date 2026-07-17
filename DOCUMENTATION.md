@@ -216,8 +216,12 @@ rearrange it:
 Every color is a CSS variable at the top of `css/site.css`. There are **two
 palettes**: `:root` holds the light theme (the default) and the `html.dark`
 block right under it holds the dark overrides. The sun/moon toggle switches
-between them (see section 8); the **landing page ignores both** — it is
-always black with red accents.
+between them (see section 8), and **everything follows** — the inner pages, the
+overlay, and the landing. The landing has its own trio (`--landing-bg`,
+`--landing-icon`, `--landing-main`) so it can be black/red in dark and
+white/black in light without dragging the inner pages' red hovers with it; its
+*particle* colours can't live in CSS at all (WebGL) and are in `index.html` —
+see [8.1](#81-light--dark).
 
 | Variable | Light | Dark | Used for |
 |---|---|---|---|
@@ -1314,10 +1318,50 @@ after the front page: a few KB (everything's cached).
 
 ### 8.1 Light / dark
 
+**The landing follows the theme too.** Pick light and the whole scene flips:
+white page, **black particles**, black chrome (date, teponaztli, hints, numerals,
+morph buttons). Dark is the original: black page, red particles, red chrome. It's
+purely a colour change — the geometry, glow, mouse tracking, audio reactivity and
+every morph behave identically in both.
+
+Because the toggle only exists once the site is open, the flow is: enter the
+site → switch the theme → go back to the landing (corner skull) → it's repainted.
+
+Two halves, because WebGL can't read CSS:
+
+- **The chrome** is CSS variables — `--landing-bg`, `--landing-icon` (at rest)
+  and `--landing-main` (lit/hover) in `css/site.css`, defined in `:root` (light)
+  and overridden in `html.dark`. They're separate from `--color-main`/
+  `--color-icon` on purpose: those stay red for the *inner pages'* link hovers.
+  Keep the icon/main pairing dim → lit so hover feedback survives in both themes.
+- **The particles** are the `DARK ? … : …` colour block in `index.html`
+  (`SKULL_COL`, `BG_COL`, `MINI_COL`), re-read on the `themechange` event.
+
+**How black particles are possible (the important bit).** The scene draws with
+**additive** blending on a black clear — that's what makes it glow, and it's why
+it can be red. Additive can only ever *add* light, so it physically cannot paint
+a dark particle onto a white page. Rather than rewrite the blending (which would
+change how the density and glow read), light mode draws the scene exactly as
+always but in **white**, and CSS then **inverts the finished canvas**: the black
+clear becomes a white page, the white particles become black. Same geometry, same
+accumulation — mirrored. Hence:
+
+- `SKULL_COL` / `BG_COL` are **pre-inversion** colours: white here *looks* black.
+- The invert rule lists `canvas#gl`, `canvas#swap`, `canvas#bgPrev` in
+  `css/site.css`. **`canvas#mini` is deliberately excluded** — it also lives on
+  the inner pages, where it must follow `--ink` — so it gets its real, final
+  colour from `MINI_COL` instead. If you add a landing canvas, add it to that
+  rule *and* give it a pre-inversion colour.
+- **`captureBackground()` re-applies the inversion by hand** (`c.filter =
+  'invert(1)'`). A CSS filter never touches a canvas's actual pixels, so a raw
+  copy would hand the inner pages the un-inverted (black) scene — this is the one
+  place the trick leaks, and it's already handled.
+
+**The rest of the system:**
+
 - **Palettes**: `:root` (light) and `html.dark` (overrides) at the top of
-  `css/site.css` — full table in recipe 1.3. The **landing page is exempt on
-  purpose**: it's always black with the red skull, trig, teponaztli and date,
-  in both themes. Only the overlay and the inner pages flip.
+  `css/site.css` — full table in recipe 1.3. The overlay, the inner pages **and
+  the landing** all flip (the landing via the `--landing-*` vars above).
 - **Which theme new visitors get (the default)**: **one line** — the
   `var THEME_DEFAULT = 'dark';` at the top of `js/theme-init.js`. Set it to
   `'dark'` or `'light'`. That's the whole switch; it applies site-wide to
@@ -2067,6 +2111,28 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-17 — landing follows the theme, mobile backdrop fix, menu fit
+- **The landing now follows light/dark** (§8.1). Light = white scene, black
+  particles, black chrome; dark = the original black/red. Colour only — geometry,
+  glow, reactivity and the morphs are untouched. Chrome moved to new
+  `--landing-bg`/`--landing-icon`/`--landing-main` vars (kept separate from
+  `--color-*`, which stay red for the inner pages' hovers); particles come from a
+  `DARK ? … : …` block in `index.html` that re-reads on `themechange`. Because
+  additive blending can't darken a white page, light mode draws the scene in
+  **white and CSS-inverts the canvas** — so those JS colours are pre-inversion.
+  `captureBackground()` re-applies the inversion by hand, since a CSS filter
+  doesn't touch canvas pixels. `404.html` got the same treatment.
+- **Fixed the frozen backdrop on mobile** (§8.10). `background-attachment: fixed`
+  is not honoured by iOS Safari — it falls back to `scroll`, which caused *both*
+  reported symptoms at once: the shot scrolled with the page, and `cover` then
+  sized it against the body's full scrollable height instead of the viewport, so
+  it looked stretched/zoomed. Now a `position: fixed` pseudo-element (reliable on
+  mobile, and exactly viewport-sized, so `cover` measures the viewport).
+- **Mobile menu now always fits on one line.** Spanish is ~19% wider than English
+  across the six labels, which was overflowing the bar. The font/gap now scale
+  with the viewport and are *capped* at their previous values, so it never grows —
+  only shrinks on narrow screens.
 
 ### 2026-07-16 — bio text wraps under the headshot + CV link
 - **About page, desktop:** the headshot now **floats right** and the bio wraps

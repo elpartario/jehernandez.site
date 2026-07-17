@@ -13,8 +13,9 @@
 	/* This page is the LANDING look with nothing on it: the strangeTrig
 	   background, the long-count date + EN/ES, and a big 404 where the skull
 	   would be. No skull/heart, no teponaztli, no morph buttons, no audio.
-	   Body has no .page class, so site.css gives it the black landing styling
-	   (red date, undocked EN/ES under it) for free. */
+	   Body has no .page class, so site.css gives it the LANDING styling for free
+	   — including following the light/dark theme (black scene + red chrome in
+	   dark, white scene + black chrome in light) and the undocked EN/ES. */
 	canvas#gl {
 		display: block;
 		position: fixed;
@@ -36,7 +37,7 @@
 	}
 	#nf .code {
 		display: block;
-		color: var(--color-main);        /* the same red as the long-count date */
+		color: var(--landing-main);      /* matches the long-count date in both themes */
 		font-weight: 700;
 		font-size: clamp(38px, 11vmin, 120px);
 		line-height: 1;
@@ -45,15 +46,17 @@
 	#nf .back {
 		display: inline-block;
 		margin-top: 0.9em;
-		color: var(--color-icon);        /* dim at rest, lights up on hover — like the site's links */
+		color: var(--landing-icon);      /* dim at rest, lights up on hover — like the site's links */
 		font-size: clamp(14px, 2.2vmin, 20px);
 		letter-spacing: 0.08em;
 		text-decoration: none;
 	}
-	#nf .back:hover { color: var(--color-main); }
+	#nf .back:hover { color: var(--landing-main); }
 
-	/* the sun/moon toggle would do nothing here (this page is always black),
-	   so hide the one site.js appends */
+	/* Hide the sun/moon toggle site.js appends: the landing hides it too (there
+	   it only appears with the overlay open, and a 404 has no overlay). The page
+	   still FOLLOWS whatever theme the visitor last chose — they just can't
+	   change it from here. */
 	#themeT { display: none; }
 	</style>
 </head>
@@ -115,13 +118,14 @@ void main(){
 	<script id="fs-bg" type="x-shader/x-fragment">
 precision mediump float;
 uniform float uEdgeFade;
+uniform vec3 uBgCol;       // particle colour — theme-aware, set from JS
 varying float vB;
 varying float vRad;
 void main(){
 	float d = length(gl_PointCoord - 0.5);
 	float m = smoothstep(0.5, 0.05, d) * vB;
 	if (uEdgeFade > 0.0) m *= exp(-uEdgeFade * vRad * vRad);
-	gl_FragColor = vec4(m * 0.55, m * 0.02, m * 0.03, m);
+	gl_FragColor = vec4(uBgCol * m, m);
 }
 	</script>
 	<script id="vs-blit" type="x-shader/x-vertex">
@@ -269,6 +273,9 @@ void main(){
 		gl.uniform1i(U(bgP, 'uTypeA'), BG.type);
 		gl.uniform1f(U(bgP, 'uDim'), 1.0);        // no morph here, so always full brightness
 		gl.uniform1f(U(bgP, 'uEdgeFade'), 0.0);   // full-screen: never edge-faded
+		// dark = red on black; light = white, which CSS inverts to dark-on-white
+		const DARK = document.documentElement.classList.contains('dark');
+		gl.uniform3f(U(bgP, 'uBgCol'), ...(DARK ? [0.55, 0.02, 0.03] : [0.55, 0.55, 0.55]));
 		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.ONE, gl.ONE);
 		gl.drawArrays(gl.POINTS, 0, BG.count);

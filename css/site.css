@@ -66,13 +66,42 @@
 	--ink: #020202;                  /* text on the pages */
 	--color-overlay: 240, 240, 240;  /* --color-page as bare R,G,B for the overlay's rgba() */
 	--color-modal: #fdfdfd;          /* "why this date?" card background (flips with the theme) */
+
+	/* ---- THE LANDING SCENE (index + 404) — follows the theme too ----
+	   LIGHT: a white scene with black particles and black chrome.
+	   DARK (below): the original black scene, red particles, red chrome.
+	   Keep the pairing: --landing-icon is chrome at REST and --landing-main is
+	   lit/hover, so the dim -> lit relationship survives in both themes. The
+	   PARTICLE colours aren't here (WebGL can't read CSS) — they're the
+	   DARK ? … : … block in index.html. */
+	--landing-bg: #fff;              /* matches invert(black) exactly — see below */
+	--landing-icon: #5a5a5a;         /* landing chrome at rest (teponaztli, hints, numerals) */
+	--landing-main: #020202;         /* landing chrome lit / hovered / the date */
 }
 html.dark {
 	--color-page: #0f0f0f;
 	--ink: #fdfdfd;
 	--color-overlay: 15, 15, 15;
 	--color-modal: #161616;
+	--landing-bg: #000;
+	--landing-icon: #d40000;
+	--landing-main: #f00;
 }
+
+/* ============ how the landing's particles turn black in light mode ============
+   The scene is drawn with ADDITIVE blending on a black clear — that's what makes
+   the particles glow, and it's why they can be red. Additive can only ever ADD
+   light, so it physically cannot draw a dark particle onto a white page. Rather
+   than rewrite the blending (which would change how the glow and density read),
+   light mode draws the scene exactly as always but in WHITE, then inverts the
+   finished canvas: the black clear becomes a white page and the white particles
+   become black ones. Same geometry, same accumulation, same structure — mirrored.
+   So the colours JS feeds these canvases are PRE-inversion (index.html).
+   canvas#mini is deliberately NOT listed: it also lives on the inner pages, where
+   it must follow --ink, so it gets its final colour straight from JS instead. */
+html:not(.dark) canvas#gl,
+html:not(.dark) canvas#swap,
+html:not(.dark) canvas#bgPrev { filter: invert(1); }
 /* smooth theme swap: site.js adds this class for ~0.7s around the toggle so
    everything cross-fades instead of snapping (and hovers stay instant otherwise) */
 html.theming, html.theming body, html.theming *, html.theming *::before {
@@ -101,7 +130,7 @@ html, body {
 }
 html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
 body {
-	background: #000;
+	background: var(--landing-bg);   /* the landing; body.page overrides it below */
 	margin: 0;
 	font-family: var(--site-font), 'Academico', Georgia, serif;
 }
@@ -119,7 +148,7 @@ body {
 	left: 50%;
 	transform: translateX(-50%);
 	z-index: 30;
-	color: var(--color-main);
+	color: var(--landing-main);   /* on the landing; the overlay/pages override to --ink */
 	font-weight: 700;
 	font-size: clamp(17px, 3.4vmin, 30px);
 	letter-spacing: 0.14em;
@@ -248,8 +277,15 @@ body.page .menu a:hover { color: var(--color-main); }
 		white-space: nowrap;
 		justify-content: flex-end;
 		max-width: calc(100vw - 5vmax);
-		gap: clamp(6px, 2.2vw, 12px);
-		font-size: clamp(11px, 3.4vw, 14px);
+		/* Sized off the VIEWPORT so the row always fits on one line — the middle
+		   value is what scales; the last value is the ceiling. The ceiling (14px /
+		   12px) is the size this was before, so it never grows, it only shrinks on
+		   narrow screens. The scaling factors are set for the LONGEST language:
+		   Spanish is ~19% wider than English (38 chars vs 32 across the six
+		   labels), so if you add a language with longer words, lower the vw
+		   numbers (not the ceiling) until it fits again. */
+		gap: clamp(4px, 1.8vw, 12px);
+		font-size: clamp(9px, 2.8vw, 14px);
 		/* translucent dark scrim so the menu reads on any background color */
 		background: rgba(0, 0, 0, 0.7);
 		padding: 0.5em 0.85em;
@@ -365,25 +401,38 @@ body.page { background: var(--color-page); color: var(--ink); }
 /* ============ frozen-background backdrop (all inner pages) ============
    index.html screenshots its frozen scene into sessionStorage each time the
    overlay opens; js/site.js then hands that shot to this rule as --bgshot-url
-   and adds .has-bgshot. The shot is painted as the BODY's own background — so
-   it always sits behind every element, with no z-index/stacking fragility —
-   and a tint layer is stacked ON TOP of it in the same background-image (the
-   first layer paints over the second). The tint is the SAME rgba the canvas
-   index uses for its overlay, and --color-overlay flips with the theme, so
-   this reads correctly in BOTH light and dark. Visitors who never entered the
-   landing have no shot, so .has-bgshot is absent and the solid --color-page
-   background above is used instead.
+   and adds .has-bgshot. It's painted by a FIXED, viewport-sized pseudo-element
+   sitting behind the content (z-index:-1, so it's under the text but above the
+   page background), with the tint stacked ON TOP of the shot in the same
+   background-image (the first layer paints over the second). The tint is the
+   SAME rgba the canvas index uses for its overlay, and --color-overlay flips
+   with the theme, so this reads correctly in BOTH light and dark. Visitors who
+   never entered the landing have no shot, so .has-bgshot is absent and the solid
+   --color-page background above is used instead.
+
+   WHY a fixed pseudo-element and not `background-attachment: fixed` on <body>:
+   iOS Safari doesn't honour background-attachment:fixed. It silently falls back
+   to `scroll`, which broke this twice over on phones — the shot scrolled with
+   the page, AND `cover` then sized it against the body's whole scrollable
+   height instead of the viewport, so it came out massively zoomed/"stretched".
+   `position: fixed` IS reliable on mobile, and because the element is exactly
+   the viewport, `cover` measures against the viewport — right aspect, no scroll.
+
    • To change how much of the shot shows through, edit the 0.86 (both stops
-     must match; lower = more of the screenshot visible).
-   • background-attachment: fixed keeps it still while the page scrolls. */
-body.page.has-bgshot {
+     must match; lower = more of the screenshot visible). */
+body.page.has-bgshot { background: transparent; }   /* let the ::before show */
+body.page.has-bgshot::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
 	background-image:
 		linear-gradient(rgba(var(--color-overlay), 0.86), rgba(var(--color-overlay), 0.86)),
 		var(--bgshot-url);
 	background-size: cover;
 	background-position: center;
 	background-repeat: no-repeat;
-	background-attachment: fixed;
 }
 
 .sheet {

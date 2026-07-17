@@ -33,7 +33,7 @@
 		left: 50%;
 		transform: translateX(-50%);
 		z-index: 5;
-		color: var(--color-icon);
+		color: var(--landing-icon);
 		font-size: clamp(12px, 1.9vmin, 16px);
 		letter-spacing: 0.08em;
 		white-space: nowrap;
@@ -52,7 +52,7 @@
 		bottom: calc(2.5vmax + clamp(64px, 7.5vmax, 110px) * 0.667 + 44px);
 		transform: translateX(-50%);
 		z-index: 5;
-		color: var(--color-icon);
+		color: var(--landing-icon);
 		font-size: clamp(20px, 3vmin, 30px);
 		line-height: 1;
 		pointer-events: none;
@@ -181,7 +181,7 @@
 		display: block;
 		width: 100%;
 		height: auto;
-		color: var(--color-icon);
+		color: var(--landing-icon);
 		transition: color 0.15s ease, opacity 0.2s ease;
 	}
 	#soundT .cap {
@@ -189,11 +189,11 @@
 		margin-top: 0.35em;
 		text-align: center;
 		font-size: clamp(10px, 1.5vmin, 13px);
-		color: var(--color-icon);
+		color: var(--landing-icon);
 		transition: color 0.15s ease;
 	}
-	#soundT:hover .tepo { color: var(--color-main); }
-	#soundT:hover .cap { color: var(--color-main); }
+	#soundT:hover .tepo { color: var(--landing-main); }
+	#soundT:hover .cap { color: var(--landing-main); }
 	#soundT.muted .tepo { opacity: 0.35; }
 
 	/* ============ track selector: Mayan numerals 1/2/3 ============
@@ -287,7 +287,7 @@
 	   clickable — which is what stops the mis-clicks onto the numeral below. */
 	clip-path: inset(var(--tnum-hit-clip, 40%) 0 0 0);
 
-	color: var(--color-icon);
+	color: var(--landing-icon);
 	background: none;
 	border: none;
 	padding: 0;
@@ -364,7 +364,7 @@ body.audio-on .tnum.active {
 }
 
 .tnum:hover {
-	color: var(--color-main);
+	color: var(--landing-main);
 }
 
 	/* ============ heart/skull swap button (bottom right) ============
@@ -451,7 +451,7 @@ body.audio-on .tnum.active {
 	transform: translateX(-50%);
 	/* everything below matches #hintTepo exactly, so all three arrows are
 	   identical on every screen size (font, size, colour, animation) */
-	color: var(--color-icon);
+	color: var(--landing-icon);
 	font-size: clamp(20px, 3vmin, 30px);
 	line-height: 1;
 
@@ -727,6 +727,7 @@ void main(){
 	<script id="fs-bg" type="x-shader/x-fragment">
 precision mediump float;
 uniform float uEdgeFade;   // 0 = off (main background); >0 = exponential radial fade (preview)
+uniform vec3 uBgCol;       // particle colour — theme-aware, set from JS (see BG_COL)
 varying float vB;
 varying float vRad;
 void main(){
@@ -737,7 +738,7 @@ void main(){
 	if (uEdgeFade > 0.0) m *= exp(-uEdgeFade * vRad * vRad);
 	// alpha = m so the (transparent) preview canvas shows just the points; the
 	// main background renders to an opaque buffer whose alpha is ignored by the blit
-	gl_FragColor = vec4(m * 0.55, m * 0.02, m * 0.03, m);
+	gl_FragColor = vec4(uBgCol * m, m);
 }
 	</script>
 
@@ -842,6 +843,25 @@ void main(){
 	}
 	let INK = inkVec();
 	addEventListener('themechange', () => { INK = inkVec(); });
+
+	/* ============ THEME-AWARE SCENE COLOURS ============
+	   The landing follows the light/dark toggle. WebGL can't read CSS variables,
+	   so the particle colours live here (the CHROME colours are --landing-* in
+	   css/site.css). Read that file's "how the landing's particles turn black"
+	   note first — the short version:
+
+	     dark  = the original red particles on a black clear.
+	     light = the SAME scene drawn in WHITE, which CSS then inverts, giving
+	             black particles on a white page.
+
+	   So SKULL_COL/BG_COL are PRE-inversion colours: white here looks black on
+	   screen. MINI_COL is the exception — the corner skull is never inverted
+	   (it's shared with the inner pages), so it's a real, final colour. */
+	let DARK = document.documentElement.classList.contains('dark');
+	addEventListener('themechange', () => { DARK = document.documentElement.classList.contains('dark'); });
+	const SKULL_COL = () => DARK ? [1.0, 0.055, 0.075] : [1, 1, 1];        // inverted -> black
+	const BG_COL    = () => DARK ? [0.55, 0.02, 0.03] : [0.55, 0.55, 0.55]; // inverted -> dark grey
+	const MINI_COL  = () => DARK ? [1.0, 0.055, 0.075] : [0.02, 0.02, 0.02]; // NOT inverted: final
 
 	const FILE_PROTO = location.protocol === 'file:';
 	if (FILE_PROTO) console.info('[site] Opened from disk (file://): skull and audio load via ' +
@@ -1282,7 +1302,13 @@ void main(){
 			const oc = document.createElement('canvas');
 			oc.width = w; oc.height = h;
 			const c = oc.getContext('2d');
-			c.fillStyle = '#000'; c.fillRect(0, 0, w, h);   // JPG has no alpha — black behind
+			c.fillStyle = DARK ? '#000' : '#fff';           // JPG has no alpha — flat colour behind
+			c.fillRect(0, 0, w, h);
+			// In light mode the canvas is inverted by CSS — but a CSS filter never
+			// touches the canvas's actual PIXELS, so a raw copy would hand the inner
+			// pages the un-inverted (black) scene. Re-apply the same inversion here.
+			// (Set after the fillRect so it only affects the drawImage.)
+			if (!DARK) c.filter = 'invert(1)';
 			c.drawImage(canvas, 0, 0, w, h);
 			sessionStorage.setItem('bgShot', oc.toDataURL('image/jpeg', 0.6));
 		} catch (e) { /* storage full / blocked — skip, inner pages fall back to solid color */ }
@@ -1519,6 +1545,7 @@ void main(){
 				// uDim = brightness blink: 1 (full) -> 0 (black), smoothstepped
 				gl.uniform1f(U(bgP, 'uDim'), bgVis * bgVis * (3 - 2 * bgVis));
 				gl.uniform1f(U(bgP, 'uEdgeFade'), 0.0);   // full-screen bg is never edge-faded
+				gl.uniform3f(U(bgP, 'uBgCol'), ...BG_COL());
 				gl.enable(gl.BLEND);
 				gl.blendFunc(gl.ONE, gl.ONE);
 				gl.drawArrays(gl.POINTS, 0, CFG.bg.count);
@@ -1580,7 +1607,7 @@ void main(){
 				// the scan-correction rotation fades out as the heart takes over
 				gl.uniformMatrix3fv(U(skullP, 'uRot'), false, rotMix(ROT, IDENT, morphT));
 				gl.uniform1f(U(skullP, 'uMorph'), morphT);
-				gl.uniform3f(U(skullP, 'uCol'), 1.0, 0.055, 0.075);
+				gl.uniform3f(U(skullP, 'uCol'), ...SKULL_COL());
 				gl.enable(gl.BLEND);
 				gl.blendFunc(gl.ONE, gl.ONE);
 				gl.drawArrays(gl.POINTS, 0, skullN);
@@ -1609,9 +1636,10 @@ void main(){
 			mgl.uniform1f(MU('uCam'), CFG.cam);
 			mgl.uniform2f(MU('uLook'), (msm.x - 0.5) * CFG.lookAmt[0], (msm.y - 0.5) * CFG.lookAmt[1]);
 			mgl.uniformMatrix3fv(MU('uRot'), false, ROT);
+			// over the overlay it matches the page text; on the landing it matches
+			// the scene (red on black / near-black on white). Never inverted.
 			const over = overlay.classList.contains('open');
-			mgl.uniform3f(MU('uCol'),
-				over ? INK[0] : 1.0, over ? INK[1] : 0.055, over ? INK[2] : 0.075);
+			mgl.uniform3f(MU('uCol'), ...(over ? INK : MINI_COL()));
 			mgl.enable(mgl.BLEND);
 			mgl.blendFunc(mgl.ONE, mgl.ONE);
 			mgl.drawArrays(mgl.POINTS, 0, miniN);
@@ -1650,7 +1678,7 @@ void main(){
 				(msm.x - 0.5) * CFG.lookAmt[0] * morphT + pspinA * pv,
 				(msm.y - 0.5) * CFG.lookAmt[1] * morphT);
 			sgl.uniformMatrix3fv(SU('uRot'), false, rotMix(ROT, IDENT, pv));
-			sgl.uniform3f(SU('uCol'), 1.0, 0.055, 0.075);
+			sgl.uniform3f(SU('uCol'), ...SKULL_COL());   // #swap is inverted in light, like #gl
 			sgl.enable(sgl.BLEND);
 			sgl.blendFunc(sgl.ONE, sgl.ONE);
 			sgl.drawArrays(sgl.POINTS, 0, SWAP_N);
@@ -1677,6 +1705,7 @@ void main(){
 			bgpgl.uniform1i(BU('uTypeA'), bgType);
 			bgpgl.uniform1f(BU('uDim'), bgVis * bgVis * (3 - 2 * bgVis));
 			bgpgl.uniform1f(BU('uEdgeFade'), CFG.bg.btnEdgeBlur ? CFG.bg.btnEdgeAmount : 0.0);
+			bgpgl.uniform3f(BU('uBgCol'), ...BG_COL());   // #bgPrev is inverted in light, like #gl
 			bgpgl.enable(bgpgl.BLEND);
 			bgpgl.blendFunc(bgpgl.ONE, bgpgl.ONE);
 			bgpgl.drawArrays(bgpgl.POINTS, 0, CFG.bg.btnCount);
