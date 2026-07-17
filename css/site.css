@@ -421,22 +421,39 @@ body.page.has-bgshot {
 .embed iframe { width: 100%; border: 0; display: block; }
 .embed iframe.video { aspect-ratio: 16 / 9; height: auto; }
 
-/* bio layout: text left, full (uncropped) photo right; photo drops below on phones */
-.bio-flex {
-	display: flex;
-	gap: 3rem;
-	align-items: flex-start;
-}
-.bio-flex .bio-text { flex: 1; min-width: 0; }
-.bio-photo {
+/* ============ bio layout (about page) ============
+   DESKTOP: the full (uncropped) photo FLOATS right and the prose wraps around
+   it, then keeps going at the container's FULL width underneath it — one column
+   of text, not a narrow side column. This is why the <img> is the first child in
+   about.html: a float only affects the content that comes after it.
+   MOBILE: unchanged — photo below the text (see the media query). */
+.bio-flex { display: block; }
+.bio-flex::after {          /* contain the float so PRESS below never rides up */
+	content: '';
 	display: block;
-	width: min(58%, 980px);
+	clear: both;
+}
+.bio-photo {
+	float: right;
+	width: min(58%, 980px);   /* the photo's share of the width */
 	height: auto;
-	margin: 0;
+	/* top | right | bottom | LEFT — the left value is the gap between the photo
+	   and the text wrapping beside it; the bottom value is the gap before the
+	   text closes back under it. */
+	margin: 0.35rem 0 1.5rem clamp(2rem, 4vw, 5rem);
 }
 @media (max-width: 700px) {
-	.bio-flex { display: block; }
-	.bio-photo { width: min(340px, 85%); margin-top: 1.6rem; }
+	/* MOBILE: photo below the text, as before. The flex column exists only to
+	   move the photo LAST (it has to be first in the DOM for the desktop float);
+	   the paragraphs carry bottom margins only, so this spaces them exactly like
+	   normal block flow did. gap:0 keeps flex from adding its own spacing. */
+	.bio-flex { display: flex; flex-direction: column; gap: 0; }
+	.bio-photo {
+		float: none;
+		order: 99;            /* after every paragraph */
+		width: min(340px, 85%);
+		margin: 1.6rem 0 0;
+	}
 }
 
 /* the "featured work / full list of works" line at the foot of each work page
@@ -506,9 +523,9 @@ body.page.has-bgshot {
 }
 
 /* about page: wider canvas so the big photo and the text both breathe */
+/* the about page's canvas is wider than other pages so the photo + the text
+   wrapping around it both have room (the photo's own gap is its margin, above) */
 .about-sheet { max-width: 100rem; padding-right: 8vmin; }
-.about-sheet .bio-flex { gap: clamp(2rem, 4vw, 5rem); }
-.about-sheet .bio-text { flex: 1 1 30rem; }
 /* the "Hello. I'm a composer." title, a notch smaller than other page titles */
 .about-sheet h1 { font-size: clamp(26px, 4.6vmin, 44px); }
 

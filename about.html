@@ -24,7 +24,10 @@
 		<h1><span lang="en">Hello. I&#8217;m a composer.</span><span lang="es">Hola. Soy compositor.</span></h1>
 
 		<div class="bio-flex">
-		<div class="bio-text">
+		<!-- The photo must stay FIRST here: on desktop it floats right and only the
+		     content AFTER it wraps around and under it. On phones the CSS moves it
+		     last instead (flex `order`), so it still sits below the text there. -->
+		<img class="bio-photo" src="assets/headshot.jpg" alt="J.E. Hernández — headshot by Carlos Felipe Rosas">
 		<p lang="en"><strong>J.E. Hernández</strong> (b.1993) is a Mexican-born, San Diego/Houston-based
 		composer, cinematographer, researcher and ethnographer focusing on bridging the gap
 		between inner and outer genealogies through a sonic and multi-disciplinary practice.
@@ -84,9 +87,14 @@
 		colaboración con la ciudad de Houston que documentó el perfil sonoro de migrantes latinx del
 		histórico East End de Houston.</p>
 
+		<!-- CV LINK — currently a placeholder that goes nowhere (href="#").
+		     To hook it up: drop the file in the assets/ folder (e.g.
+		     assets/JE-Hernandez-CV.pdf) and replace BOTH href="#" below with
+		     href="/assets/JE-Hernandez-CV.pdf" — one for English, one for Spanish.
+		     Add target="_blank" rel="noopener" to each if you want a new tab. -->
+		<p><span lang="en">For a full CV, <a href="#">click here</a>.</span><span lang="es">Para ver el CV completo, <a href="#">haz clic aquí</a>.</span></p>
+
 		<p class="muted"><span lang="en">Photo Credit:</span><span lang="es">Crédito de foto:</span> <a href="https://www.carlosfeliperosas.com/" target="_blank" rel="noopener">Carlos Felipe Rosas</a></p>
-		</div>
-		<img class="bio-photo" src="assets/headshot.jpg" alt="J.E. Hernández — headshot by Carlos Felipe Rosas">
 		</div>
 
 		<h2><span lang="en">PRESS</span><span lang="es">PRENSA</span></h2>

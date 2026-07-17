@@ -1111,10 +1111,35 @@ location automatically and resolves the skull data either way.
 Layout rules that matter (all in `css/site.css`): `.sheet` is left-aligned
 with a wide 70rem max, `clamp()`ed type that scales with the window; the
 about page adds `about-sheet` (a wider 100rem canvas) and wraps its bio in
-`.bio-flex` — text left, full uncropped photo right at `min(58%, 980px)` in
-full color, photo dropping below the text on phones; `flow.html` additionally
-has the `.jump` anchor menu, smooth scrolling (`html { scroll-behavior:
-smooth; }` in its head), and the fixed `#topBtn`.
+`.bio-flex`; `flow.html` additionally has the `.jump` anchor menu, smooth
+scrolling (`html { scroll-behavior: smooth; }` in its head), and the fixed
+`#topBtn`.
+
+**The bio layout (`.bio-flex`, about page).** On **desktop** the full uncropped
+photo (`min(58%, 980px)`, full color) **floats right** and the prose wraps
+around it and then **keeps going at full width underneath** — one continuous
+column of text, not a narrow side column. On **phones** the photo sits below the
+text as before. Three things hold it together, and they're easy to break:
+
+- **The `<img>` must be the first child of `.bio-flex`** in `about.html`. A CSS
+  float only affects the content that comes *after* it, so a photo placed after
+  the paragraphs would never be wrapped around.
+- **Phones re-order it, they don't re-source it.** The media query makes
+  `.bio-flex` a `flex` column and gives `.bio-photo` `order: 99`, which moves the
+  (DOM-first) photo to the end visually. It uses `gap: 0` and relies on the
+  paragraphs' bottom-only margins, so the spacing is identical to the plain block
+  flow it replaced.
+- **`.bio-flex::after { clear: both }`** contains the float — without it, a short
+  bio would let the PRESS section ride up alongside the photo.
+
+To tune it: the photo's size is `.bio-photo`'s `width`; the gap between photo and
+the text beside it is that rule's **left** margin (`clamp(2rem, 4vw, 5rem)`), and
+the space before the text closes back underneath is its **bottom** margin.
+
+The **CV link** under the bio is a placeholder (`href="#"`). Upload the file to
+`assets/` and replace both `href="#"` in `about.html` (one in the English span,
+one in the Spanish) with e.g. `/assets/JE-Hernandez-CV.pdf` — there's a comment
+right above it saying so.
 
 The space under the footer is the third value of `.sheet`'s `padding`
 (`5vmax`, commented in site.css) — one number for every page including the
@@ -2035,6 +2060,19 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-13 — bio text wraps under the headshot + CV link
+- **About page, desktop:** the headshot now **floats right** and the bio wraps
+  around it and continues at full width underneath, instead of sitting in a
+  narrow column beside it. Required moving the `<img>` to be the *first* child of
+  `.bio-flex` (a float only affects what follows it) and dropping the `.bio-text`
+  wrapper so the paragraphs are its siblings. **Mobile is unchanged**: a flex
+  column with `order: 99` on the photo keeps it below the text, with `gap: 0` so
+  spacing matches the old block flow exactly. `.bio-flex::after { clear: both }`
+  contains the float so PRESS can't ride up beside the photo. (§5)
+- Added a **"For a full CV, click here."** line under the bio (bilingual).
+  It's a placeholder `href="#"` for now — drop the PDF in `assets/` and replace
+  both hrefs; there's a comment in `about.html` with the exact instructions.
 
 ### 2026-07-13 — 404 page, no-redirect contact form, ES copy message
 - **Added `404.html`** — the **landing stripped bare**: strangeTrig background
