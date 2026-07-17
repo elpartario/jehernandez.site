@@ -15,6 +15,29 @@
 	   display at buffer size, pushing the skull off the bottom-right */
 	canvas#gl { display: block; position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; }
 
+	/* ============ the landing is a SURFACE, not a document ============
+	   The scene follows the finger, so a drag across it must not behave like a
+	   text drag. Left alone, resting a finger mid-drag makes the browser start a
+	   selection (and pops iOS's callout/magnifier), which fights the interaction.
+	   Turning selection off on <body> covers the whole landing: the canvas, the
+	   date, the hints, the teponaztli + numerals and the morph buttons.
+	     • touch-callout: no iOS long-press menu over the scene.
+	     • tap-highlight-color: no grey flash when tapping the skull/teponaztli.
+	   #overlay switches selection back ON, so the site's own text — the bio,
+	   links, the email — stays selectable and copyable once the site is open.
+	   (The inner pages live in other files and are untouched.) */
+	body {
+		-webkit-user-select: none;
+		user-select: none;
+		-webkit-touch-callout: none;
+		-webkit-tap-highlight-color: transparent;
+	}
+	#overlay {
+		-webkit-user-select: text;
+		user-select: text;
+		-webkit-touch-callout: default;
+	}
+
 	#skullHit {
 		position: fixed;
 		left: 50%; top: 50%;
