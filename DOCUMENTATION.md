@@ -697,11 +697,14 @@ jehernandez/
 ├── work/<slug>.html ×16  one page per piece           → /work/<slug>
 ├── _redirects            Netlify redirects (/store → Square store; Netlify-only)
 ├── _headers              Netlify security headers (CSP etc.; Netlify-only, §9)
-├── .nojekyll             tells GitHub Pages not to run Jekyll (harmless elsewhere)
+├── .nojekyll             tells GitHub Pages not to run Jekyll (REQUIRED — §1.8)
+├── CNAME                 the custom domain, for GitHub Pages
+├── LICENSE               source-available, study-only (not open source)
 ├── css/site.css          ALL shared styling (colors, fonts, layout, chrome)
 ├── js/
-│   ├── site.js           date, menu, footer, theme toggle, modals, copy-email
-│   ├── theme-init.js     the pre-paint light/dark default (loaded in every <head>)
+│   ├── site.js           date, menu, footer, theme + EN/ES toggles, modals, copy-email, contact form
+│   ├── theme-init.js     pre-paint defaults + switches: THEME_DEFAULT, LANG_DEFAULT,
+│   │                     LANG_TOGGLE, LANG_TOGGLE_ON_LANDING (loaded in every <head>)
 │   ├── skull-rot.js      THE skull orientation (single source for all pages)
 │   └── mini-skull.js     corner-skull renderer for inner pages
 ├── assets/
@@ -709,14 +712,18 @@ jehernandez/
 │   ├── skull.js          same data, base64 (file:// fallback only)
 │   ├── heart.bin         160,000-point heart, the morph target (int16, 1.28 MB)
 │   ├── heart.js          same data, base64 (file:// fallback only)
-│   ├── loop.mp3          the music (see recipe 1.1)
-│   ├── audio.js          same audio, base64 (file:// fallback only)
+│   ├── loop.mp3          soundtrack 1 — Mayan numeral 𝋡 (see recipe 1.1 / §8.8)
+│   ├── cicadas.mp3       soundtrack 2 — numeral 𝋢
+│   ├── blue14.mp3        soundtrack 3 — numeral 𝋣
+│   ├── audio.js          ├─ the three tracks as base64
+│   ├── cicadas.js        ├─ (file:// fallbacks only)
+│   ├── blue14.js         └─
 │   ├── favicon.png       browser-tab icon, rendered from the skull (§8.4)
 │   ├── teponaztli.svg    sound icon source (the live copy is inlined in index.html)
 │   ├── winal.svg         winal glyph (currently unused, kept for later)
 │   ├── headshot.jpg      bio photo
 │   ├── work/             16 banner images for work.html (1200×280 jpg, recipe 1.2)
-│   ├── fonts/            Academico ×4 + Mallory ×4 woff2 (the font switch, recipe 1.4)
+│   ├── fonts/            Academico ×4 + Mallory ×4 woff2 (recipe 1.4) + MayanNumerals (§8.8)
 │   └── Voces-Fantasmas-Program-Notes.pdf
 ├── tools/
 │   ├── obj2points.py     OBJ → point-cloud .bin converter (skull + heart, §6)
@@ -2061,7 +2068,7 @@ What's already in place:
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
 
-### 2026-07-13 — bio text wraps under the headshot + CV link
+### 2026-07-16 — bio text wraps under the headshot + CV link
 - **About page, desktop:** the headshot now **floats right** and the bio wraps
   around it and continues at full width underneath, instead of sitting in a
   narrow column beside it. Required moving the `<img>` to be the *first* child of
@@ -2074,7 +2081,7 @@ are grouped summaries; dates before the first tracked day are approximate.
   It's a placeholder `href="#"` for now — drop the PDF in `assets/` and replace
   both hrefs; there's a comment in `about.html` with the exact instructions.
 
-### 2026-07-13 — 404 page, no-redirect contact form, ES copy message
+### 2026-07-16 — 404 page, no-redirect contact form, ES copy message
 - **Added `404.html`** — the **landing stripped bare**: strangeTrig background
   (random type + seeds, mouse steering, drift), the long-count date with EN / ES
   under it, a big red "404 not found" where the skull would be, and a lowercase
@@ -2095,7 +2102,7 @@ are grouped summaries; dates before the first tracked day are approximate.
 - Docs: §1.12 rewritten (redirect bullet was stale), §5 gained the 404 page, §2
   tree + README updated, §8.11 notes the JS-set-string dictionaries.
 
-### 2026-07-13 — language toggle: landing size, fade-in, off-switches
+### 2026-07-16 — language toggle: landing size, fade-in, off-switches
 - **Half size on the landing only** — `.lang-toggle` is `0.4em` under the date
   and `0.8em` once `.docked` (the overlay and every inner page), so it reads as
   a footnote on the skull screen and normally everywhere else.
@@ -2107,7 +2114,7 @@ are grouped summaries; dates before the first tracked day are approximate.
   (false = hidden on the landing only). Both only hide the control — the
   translations stay in the pages, so it's reversible at any time. Details §8.11.
 
-### 2026-07-13 — language toggle polish + EN typography
+### 2026-07-16 — language toggle polish + EN typography
 - **Toggle no longer breaks the centered date.** On the landing it now hangs
   centered *below* the long-count date (absolute, out of the flex row); it
   fades out, moves, and fades back in beside the "?" when the site opens
@@ -2118,7 +2125,7 @@ are grouped summaries; dates before the first tracked day are approximate.
 - **Fixed EN spacing** where `</em>` ran straight into the next word (`…</em>was`
   → `…</em> was`, and `</em>-` → `</em> —`) across 9 work pages.
 
-### 2026-07-13 — EN / ES bilingual toggle (full site)
+### 2026-07-16 — EN / ES bilingual toggle (full site)
 - Added an **English / Spanish (Mexican) toggle** in the header next to the "?".
   Both languages live in every page; a CSS rule hides the inactive one
   (`html[lang="en"] [lang="es"], html[lang="es"] [lang="en"] { display:none }`),
@@ -2130,7 +2137,7 @@ are grouped summaries; dates before the first tracked day are approximate.
   Proper nouns and the PRESS citations are intentionally left in English. Full
   details in §8.11.
 
-### 2026-07-13 — numeral click-target fix
+### 2026-07-15 — numeral click-target fix
 - **Fixed mis-clicks between the Mayan numerals.** Their glyphs sit at the
   bottom of a tall em box, so the empty top of each button was clickable and
   overlapped the numeral above. Added `clip-path: inset(var(--tnum-hit-clip) 0
@@ -2139,7 +2146,7 @@ are grouped summaries; dates before the first tracked day are approximate.
   Purely a hit/paint-box change — positions and spacing are untouched. Knob +
   explanation in §8.8.
 
-### 2026-07-13 — backdrop fix (light + dark), uniform arrows, doc audit
+### 2026-07-15 — backdrop fix (light + dark), uniform arrows, doc audit
 - **Fixed the frozen backdrop not showing on inner pages.** Its CSS had gone
   missing, so the injected div had no position/size/z-index and was invisible —
   what looked like "the tint works but the screenshot doesn't" was just the
@@ -2163,7 +2170,7 @@ are grouped summaries; dates before the first tracked day are approximate.
   button, frozen backdrop and modals; fixed the `typePool` value and the
   "works double-clicked" claim, which clean root-absolute URLs made false).
 
-### 2026-07-13 — frozen backdrop, per-track FFT tuning, flow nav
+### 2026-07-14 — frozen backdrop, per-track FFT tuning, flow nav
 - **Frozen-background backdrop** ([8.10](#810-the-frozen-background-backdrop-inner-pages))
   — index screenshots its frozen scene to `sessionStorage` when the overlay
   opens (`preserveDrawingBuffer` + `captureBackground()`), and the inner pages
