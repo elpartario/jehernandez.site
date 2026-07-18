@@ -1968,6 +1968,43 @@ on top**, which is why the tint gradient is listed before the shot.)
   more screenshot visible, higher = more tint.
 - `background-attachment: fixed` keeps the shot still while the page scrolls.
 
+**Toggling the theme while the scene is frozen (the "cyan background" fix).**
+This is the one genuinely tricky interaction in the whole light/dark system, so
+it's worth understanding before touching either piece.
+
+The landing gets its light mode by drawing the scene in **white** and letting CSS
+`filter: invert(1)` flip it (see §8.1 — additive blending physically cannot draw
+dark particles onto a light page). That means the **draw colour and the CSS
+filter must always agree**: dark → draw red, no filter; light → draw white,
+filter on.
+
+Opening the overlay **freezes** the render loop (`running = false`). If the
+visitor then flips the theme, the CSS filter switches instantly but the canvas
+still holds pixels drawn for the *old* theme — and nothing redraws them. The
+result was visibly wrong:
+
+- dark → light: the frozen **red** pixels got inverted → **cyan on white**;
+- light → dark: the **white** pixels lost their filter → white-on-black, which
+  also got captured into the screenshot for the inner pages.
+
+The fix is a `themechange` listener in `index.html` that only acts **when
+frozen**: it un-freezes for exactly one frame (`running = true` plus a
+`pendingRepaint` flag), and the tail of `frame()` then re-freezes and re-runs
+`captureBackground()`. So the scene is redrawn once in the new theme's colour
+and re-photographed, leaving both the live frozen canvas and the stored
+screenshot correct. Two details make it safe:
+
+- **The pose is pinned** (`msm.x/y` are set to `sm.x/y` before the frame) so the
+  skull can't jump to wherever the cursor has drifted during the freeze — the
+  frozen frame recolours in place.
+- **The repaint is a flag, not a direct draw.** The redraw happens inside the
+  normal `frame()` loop, so it uses the exact same code path as every other
+  frame — no duplicate render logic to keep in sync.
+
+If you ever change how freezing works, keep this rule: *any* state that changes
+the scene's colour must force one repaint while frozen, or the canvas and the
+screenshot will drift out of step with the theme again.
+
 ---
 
 ### 8.11 The EN / ES language toggle
@@ -2122,6 +2159,23 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-17 — theme toggle while the scene is frozen ("cyan background" fix)
+- **Fixed** the frozen landing showing the wrong colours after a theme toggle.
+  Opening the overlay freezes the render loop, so flipping the theme swapped the
+  CSS `invert` filter while the canvas still held pixels drawn for the *old*
+  theme: dark → light inverted the **red** particles to **cyan on white**, and
+  light → dark left white-on-black (which also got baked into the screenshot the
+  inner pages use).
+- **Fix**: a `themechange` listener in `index.html` that acts only when frozen —
+  it un-freezes for exactly one frame (`pendingRepaint`), and the tail of
+  `frame()` re-freezes and re-runs `captureBackground()`. The scene is redrawn
+  once in the new theme's colour and re-photographed, so the live frozen canvas
+  *and* the stored screenshot both end up correct. The pose is pinned
+  (`msm = sm`) so the skull doesn't jump to the drifted cursor, and the repaint
+  goes through the normal render path rather than duplicating draw logic.
+- Also resolves the "screenshot is white particles on black" case: toggling
+  light → dark now re-captures in red-on-black, as expected. (§8.10)
 
 ### 2026-07-17 — landing theme off-switch
 - Added **`THEME_ON_LANDING`** to `js/theme-init.js` (code switch, no user

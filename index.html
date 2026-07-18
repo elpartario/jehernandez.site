@@ -1321,6 +1321,7 @@ void main(){
 
 	const overlay = document.getElementById('overlay');
 	let entered = false, running = true;
+	let pendingRepaint = false;   // one-shot: redraw the frozen scene after a theme toggle
 
 	/* Screenshot the frozen scene into a lightweight JPG in sessionStorage, so the
 	   inner pages can show the same backdrop (under their overlay tint). Downscaled
@@ -1359,6 +1360,21 @@ void main(){
 			box.classList.remove('fade');
 		}, 300);
 	}
+
+	/* Recolour the FROZEN scene when the theme is toggled behind the overlay.
+	   The render loop is paused (running=false), so the canvas keeps stale
+	   pixels while CSS re-inverts for the new theme — that mismatch is what
+	   showed cyan (dark->light) or white-on-black (light->dark). Fix: nudge the
+	   loop to draw exactly ONE frame in the new colours, then re-freeze and
+	   refresh the inner-page screenshot. We pin the smoothed mouse to its frozen
+	   value first, because the sim's `sm = msm` line would otherwise snap the
+	   pose to wherever the cursor has since moved. */
+	addEventListener('themechange', () => {
+		if (running) return;              // not frozen: the live loop already recolours
+		msm.x = sm.x; msm.y = sm.y;       // keep the frozen pose put for the forced frame
+		running = true;
+		pendingRepaint = true;
+	});
 
 	function setOverlay(on){
 		overlay.classList.toggle('open', on);
@@ -1740,6 +1756,14 @@ void main(){
 			bgpgl.enable(bgpgl.BLEND);
 			bgpgl.blendFunc(bgpgl.ONE, bgpgl.ONE);
 			bgpgl.drawArrays(bgpgl.POINTS, 0, CFG.bg.btnCount);
+		}
+
+		// theme toggled while frozen: we forced this one frame to recolour the
+		// scene — now re-freeze and re-bake the screenshot to the new colours
+		if (pendingRepaint) {
+			pendingRepaint = false;
+			running = false;
+			captureBackground();
 		}
 
 		requestAnimationFrame(frame);
