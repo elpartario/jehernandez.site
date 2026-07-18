@@ -2026,8 +2026,12 @@ screenshot correct. Three details make it safe:
   flag into a local `repaint`, forces `dt = 0`, and *also* skips the eases that
   step **once per frame rather than per second** — `reactEnv`, `reactMul` and the
   heart's `morphT` — since a zero `dt` wouldn't stop those. The audio push is
-  reused from the last real frame (`lastPush`/`lastPushBg`) instead of re-reading
-  the analyser, and the pointer smoothing is skipped. The result is a frame that
+  reused from the last **drawn** frame (`lastPush`/`lastPushBg`) instead of
+  re-reading the analyser, and the pointer smoothing is skipped. "Drawn" is
+  load-bearing: this loop keeps spinning while frozen (only the *draw* is gated
+  by `running`), and with the audio suspended those values decay to ~0 within a
+  second — so the assignment is gated on `running`, or a repaint would redraw the
+  skull/heart flat, as though the sound had been off. The result is a frame that
   is pixel-identical to the frozen one apart from the colour: the particles do
   not creep forward. **If you add new per-frame state, gate it on `!repaint`** or
   toggling the theme will nudge the frozen scene again.
@@ -2194,7 +2198,18 @@ What's already in place:
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
 
-### 2026-07-17 — frozen repaint no longer advances time; per-theme screenshots
+### 2026-07-18 — frozen repaint keeps the audio displacement
+- **Fixed** the skull/heart snapping to its no-audio shape when the theme was
+  toggled with sound on (and that flat state being baked into the screenshot).
+  The repaint reuses `lastPush`, but the frame loop keeps running while frozen —
+  only the *draw* is gated by `running` — and with audio suspended the push
+  decays to ~0 within a second, overwriting the remembered value. `lastPush` /
+  `lastPushBg` are now only assigned on frames that actually drew, pinning the
+  frozen moment's displacement across any number of theme toggles. The mini
+  corner skull is unaffected: it draws outside the `running` gate and still uses
+  the live, decaying push. (§8.10)
+
+### 2026-07-18 — frozen repaint no longer advances time; per-theme screenshots
 - **The theme-toggle repaint is now a pure recolour.** It previously ran one
   normal frame, so the particles crept forward by up to 50 ms. `frame()` now
   forces `dt = 0` for a repaint *and* skips the eases that step per-frame rather

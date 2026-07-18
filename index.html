@@ -1576,7 +1576,15 @@ void main(){
 			reactMul += (trackReactTarget - reactMul) * 0.05;
 			push = lv.model * CFG.audioPush * reactEnv * reactMul;   // skull / heart / mini / preview
 			pushBg = lv.bg * CFG.audioPush * reactEnv;               // strangeTrig background (untouched)
-			lastPush = push; lastPushBg = pushBg;
+			// Remember the push ONLY from frames that actually drew. This loop keeps
+			// spinning while the scene is frozen (only the draw is gated by `running`),
+			// and with the audio suspended these values decay to ~0 — so an ungated
+			// assignment would erase the frozen moment's displacement, and a later
+			// repaint would redraw the skull/heart flat, as if the sound were off.
+			// Pinning it here keeps the frozen pose intact across any number of
+			// theme toggles. (The mini corner skull is drawn outside the `running`
+			// gate and still uses the live, decaying `push` — unchanged.)
+			if (running) { lastPush = push; lastPushBg = pushBg; }
 		}
 
 		if (running) {
@@ -1814,7 +1822,7 @@ void main(){
 		}
 
 		// theme toggled while frozen: we forced this one frame to recolour the
-		// scene — now re-freeze and re-bake the screenshot to the new colors
+		// scene — now re-freeze and re-bake the screenshot to the new colours
 		if (pendingRepaint) {
 			pendingRepaint = false;
 			running = false;
