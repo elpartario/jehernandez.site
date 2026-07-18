@@ -39,7 +39,7 @@ const MENU_LINKS = [
 	[{ en: 'about', es: 'acerca' }, 'about'],
 	[{ en: 'work', es: 'obra' }, 'work'],
 	[{ en: 'writing', es: 'escritos' }, 'https://jehernandez.substack.com'],
-	[{ en: 'store', es: 'tienda' }, 'https://alkabilmusic.square.site/'],
+	[{ en: 'scores', es: 'partituras' }, 'https://alkabilmusic.square.site/'],
 	[{ en: 'contact', es: 'contacto' }, 'contact'],
 ];
 /* icon links rendered after the text links (inline SVG, add more if needed) */
@@ -55,7 +55,7 @@ const FOOTER_LINKS = [
 	[{ en: 'Bio', es: 'Biografía' }, 'about'],
 	[{ en: 'My Work', es: 'Mi obra' }, 'work'],
 	[{ en: 'Contact Me', es: 'Contáctame' }, 'contact'],
-	[{ en: 'Buy My Music', es: 'Compra mi música' }, 'https://alkabilmusic.square.site/'],
+	[{ en: 'Buy My Scores', es: 'Partituras' }, 'https://alkabilmusic.square.site/'],
 ];
 
 /* Render a label that may be a plain string OR a { en, es } pair. For a pair we
