@@ -1960,6 +1960,31 @@ on top**, which is why the tint gradient is listed before the shot.)
   and is gone on a fresh visit — intentional (it's "the scene you just left").
   Because `captureBackground()` runs on *every* overlay open, going back to the
   landing and re-entering **replaces** the old shot with the new one.
+- **Two images are stored, one per theme** (`bgShotDark` / `bgShotLight`), and
+  `js/site.js` picks the one matching the current theme — re-picking on
+  `themechange`, which is just a swap of the `--bgshot-url` property, so it's
+  instant with no re-render. This exists because an inner page has **no scene to
+  re-photograph**: if the visitor flips the theme over there, the only thing we
+  can do is show an image that already exists. (A tab that captured before this
+  was theme-aware falls back to the old single `bgShot` key — one stale-coloured
+  backdrop until the next capture.)
+
+  Rather than render the scene twice, both looks are **derived from the one
+  canvas**. That works because the **red channel is the same intensity in either
+  theme** — the draw colours are `.55` (background) and `1.0` (skull) in red both
+  times, and only green/blue differ:
+
+  | Wanted | Derivation |
+  |---|---|
+  | light | `255 − R`, copied to all three channels → black particles on white |
+  | dark | intensity tinted red — which the raw canvas **already is** when captured in dark mode |
+
+  Verified numerically: deriving *light from a dark capture* is **pixel-exact**.
+  The reverse (capturing while already in light mode) is the one lossy direction —
+  the canvas is grey there, so which pixels were skull vs background is
+  unknowable and the red rebuild uses a single ratio for both. Measured error is
+  ~2/255 in green/blue on background pixels only (skull pixels are exact), under
+  an 0.86 tint — not perceptible.
 - **Weight**: the JPEG is capped/compressed to stay light (~roughly 80–150 KB);
   raise the `0.6` quality or the `1280` cap in `captureBackground()`
   (`index.html`) for crisper/heavier, lower them for lighter.
@@ -1992,11 +2017,20 @@ frozen**: it un-freezes for exactly one frame (`running = true` plus a
 `pendingRepaint` flag), and the tail of `frame()` then re-freezes and re-runs
 `captureBackground()`. So the scene is redrawn once in the new theme's colour
 and re-photographed, leaving both the live frozen canvas and the stored
-screenshot correct. Two details make it safe:
+screenshot correct. Three details make it safe:
 
 - **The pose is pinned** (`msm.x/y` are set to `sm.x/y` before the frame) so the
   skull can't jump to wherever the cursor has drifted during the freeze — the
   frozen frame recolours in place.
+- **The repaint advances no time at all.** `frame()` reads the `pendingRepaint`
+  flag into a local `repaint`, forces `dt = 0`, and *also* skips the eases that
+  step **once per frame rather than per second** — `reactEnv`, `reactMul` and the
+  heart's `morphT` — since a zero `dt` wouldn't stop those. The audio push is
+  reused from the last real frame (`lastPush`/`lastPushBg`) instead of re-reading
+  the analyser, and the pointer smoothing is skipped. The result is a frame that
+  is pixel-identical to the frozen one apart from the colour: the particles do
+  not creep forward. **If you add new per-frame state, gate it on `!repaint`** or
+  toggling the theme will nudge the frozen scene again.
 - **The repaint is a flag, not a direct draw.** The redraw happens inside the
   normal `frame()` loop, so it uses the exact same code path as every other
   frame — no duplicate render logic to keep in sync.
@@ -2159,6 +2193,25 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-17 — frozen repaint no longer advances time; per-theme screenshots
+- **The theme-toggle repaint is now a pure recolour.** It previously ran one
+  normal frame, so the particles crept forward by up to 50 ms. `frame()` now
+  forces `dt = 0` for a repaint *and* skips the eases that step per-frame rather
+  than per-second (`reactEnv`, `reactMul`, `morphT`), reuses the last real
+  frame's audio push (`lastPush`/`lastPushBg`) instead of re-reading the
+  analyser, and skips pointer smoothing. The frozen scene now recolours without
+  moving. New per-frame state must be gated on `!repaint`. (§8.10)
+- **The frozen backdrop is now stored per theme** (`bgShotDark` /
+  `bgShotLight`), so toggling light/dark on an *inner* page — where there's no
+  scene to re-photograph — instantly swaps to the matching image instead of
+  keeping the old theme's colours. `js/site.js` re-picks on `themechange`; it's
+  just a `--bgshot-url` swap, no re-render.
+- Both looks are **derived from the single captured canvas** (the red channel is
+  the same intensity in either theme), so there's no second render pass:
+  light = `255 − R` as grey, dark = the raw canvas when captured in dark.
+  Verified: light-from-dark is pixel-exact; the reverse differs by ~2/255 in
+  green/blue on background pixels only. (§8.10)
 
 ### 2026-07-17 — theme toggle while the scene is frozen ("cyan background" fix)
 - **Fixed** the frozen landing showing the wrong colours after a theme toggle.

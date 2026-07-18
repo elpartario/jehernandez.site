@@ -1322,10 +1322,27 @@ void main(){
 	const overlay = document.getElementById('overlay');
 	let entered = false, running = true;
 	let pendingRepaint = false;   // one-shot: redraw the frozen scene after a theme toggle
+	// last real frame's audio push, reused by a repaint so it re-draws the scene
+	// EXACTLY as it was (see the repaint gating in frame())
+	let lastPush = 0, lastPushBg = 0;
 
-	/* Screenshot the frozen scene into a lightweight JPG in sessionStorage, so the
+	/* Screenshot the frozen scene into lightweight JPGs in sessionStorage, so the
 	   inner pages can show the same backdrop (under their overlay tint). Downscaled
-	   to keep it small; runs each time the overlay opens so it stays current. */
+	   to keep it small; runs each time the overlay opens so it stays current.
+
+	   BOTH themes are stored ('bgShotDark' + 'bgShotLight'), because an inner page
+	   has no scene to re-photograph: if the visitor flips the theme over there, JS
+	   just swaps to the other stored image (see js/site.js). Rather than render the
+	   scene twice, both looks are derived from the one canvas — which works because
+	   the RED channel is the same INTENSITY in either theme (the draw colours are
+	   bg .55 / skull 1.0 in the red channel both times; only G and B differ):
+	     • light look = invert(intensity as grey)  -> exact, from either theme
+	     • dark  look = intensity tinted red       -> the raw canvas already IS this
+	                                                  when captured in dark mode
+	   Capturing while in LIGHT mode is the one lossy direction: the canvas is grey
+	   there, so which pixels were skull vs background is unknowable and the red
+	   rebuild uses one ratio for both. The difference lands in G/B at ~1% of full
+	   brightness, under an 0.86 tint — invisible in practice. */
 	function captureBackground(){
 		try {
 			const maxW = 1280, s = Math.min(1, maxW / canvas.width);
@@ -1334,15 +1351,35 @@ void main(){
 			const oc = document.createElement('canvas');
 			oc.width = w; oc.height = h;
 			const c = oc.getContext('2d');
-			c.fillStyle = DARK ? '#000' : '#fff';           // JPG has no alpha — flat colour behind
+			c.fillStyle = '#000';                  // JPG has no alpha — flat black behind
 			c.fillRect(0, 0, w, h);
-			// In light mode the canvas is inverted by CSS — but a CSS filter never
-			// touches the canvas's actual PIXELS, so a raw copy would hand the inner
-			// pages the un-inverted (black) scene. Re-apply the same inversion here.
-			// (Set after the fillRect so it only affects the drawImage.)
-			if (!DARK) c.filter = 'invert(1)';
-			c.drawImage(canvas, 0, 0, w, h);
-			sessionStorage.setItem('bgShot', oc.toDataURL('image/jpeg', 0.6));
+			c.drawImage(canvas, 0, 0, w, h);       // the raw (pre-CSS-invert) pixels
+			const raw = c.getImageData(0, 0, w, h);
+			const d = raw.data;
+
+			// LIGHT: grey intensity, inverted -> black particles on white
+			const light = new ImageData(new Uint8ClampedArray(d), w, h);
+			const ld = light.data;
+			for (let i = 0; i < ld.length; i += 4) {
+				const v = 255 - d[i];
+				ld[i] = ld[i + 1] = ld[i + 2] = v; ld[i + 3] = 255;
+			}
+
+			// DARK: red particles on black (already the case if captured in dark)
+			let dark = raw;
+			if (!DARK) {
+				dark = new ImageData(new Uint8ClampedArray(d), w, h);
+				const dd = dark.data;
+				for (let i = 0; i < dd.length; i += 4) {
+					const v = d[i];
+					dd[i] = v; dd[i + 1] = v * 0.055; dd[i + 2] = v * 0.075; dd[i + 3] = 255;
+				}
+			}
+
+			c.putImageData(dark, 0, 0);
+			sessionStorage.setItem('bgShotDark', oc.toDataURL('image/jpeg', 0.6));
+			c.putImageData(light, 0, 0);
+			sessionStorage.setItem('bgShotLight', oc.toDataURL('image/jpeg', 0.6));
 		} catch (e) { /* storage full / blocked — skip, inner pages fall back to solid color */ }
 	}
 
@@ -1508,24 +1545,39 @@ void main(){
 	function frame(){
 		const now = performance.now();
 		if (bootT === null) bootT = now;
-		const dt = Math.min(0.05, (now - lastT) / 1000);
+		/* A REPAINT is the one-shot frame after a theme toggle while the scene is
+		   frozen. It must re-draw the SAME instant in the new colour, so every
+		   time-based update is skipped: dt is forced to 0, and the frame-based
+		   eases (which step once per frame rather than per second, so a zero dt
+		   wouldn't stop them) are bypassed entirely. Only the colour uniforms
+		   change, making the result pixel-identical apart from the recolour. */
+		const repaint = pendingRepaint;
+		const dt = repaint ? 0 : Math.min(0.05, (now - lastT) / 1000);
 		lastT = now;
 
-		msm.x += (target.x - msm.x) * 0.07;
-		msm.y += (target.y - msm.y) * 0.07;
+		if (!repaint) {
+			msm.x += (target.x - msm.x) * 0.07;
+			msm.y += (target.y - msm.y) * 0.07;
+		}
 
-		// smooth on/off: the envelope ramps toward 1 while sound is on, toward 0
-		// when muted/stopped — beats stay crisp, only the state change glides
-		const reactOn = running && audioStarted && !muted && actx.state === 'running';
-		reactEnv += ((reactOn ? 1 : 0) - reactEnv) * 0.045;
-		const lv = audioLevels();
-		// per-track reactivity applies to the MODELS only (skull/heart/mini/preview)
-		// per-track sensitivity, eased toward the active track's value so a track
-		// switch ramps the particle displacement instead of snapping to it
-		const trackReactTarget = (audioStarted && TRACKS[activeTrack]) ? (TRACKS[activeTrack].react ?? 1) : 1;
-		reactMul += (trackReactTarget - reactMul) * 0.05;
-		const push = lv.model * CFG.audioPush * reactEnv * reactMul;   // skull / heart / mini / preview
-		const pushBg = lv.bg * CFG.audioPush * reactEnv;                 // strangeTrig background (untouched)
+		let push, pushBg;
+		if (repaint) {
+			// reuse the last real frame's values: don't step the analyser or the envelopes
+			push = lastPush; pushBg = lastPushBg;
+		} else {
+			// smooth on/off: the envelope ramps toward 1 while sound is on, toward 0
+			// when muted/stopped — beats stay crisp, only the state change glides
+			const reactOn = running && audioStarted && !muted && actx.state === 'running';
+			reactEnv += ((reactOn ? 1 : 0) - reactEnv) * 0.045;
+			const lv = audioLevels();
+			// per-track reactivity applies to the MODELS only (skull/heart/mini/preview),
+			// eased toward the active track's value so a switch ramps instead of snapping
+			const trackReactTarget = (audioStarted && TRACKS[activeTrack]) ? (TRACKS[activeTrack].react ?? 1) : 1;
+			reactMul += (trackReactTarget - reactMul) * 0.05;
+			push = lv.model * CFG.audioPush * reactEnv * reactMul;   // skull / heart / mini / preview
+			pushBg = lv.bg * CFG.audioPush * reactEnv;               // strangeTrig background (untouched)
+			lastPush = push; lastPushBg = pushBg;
+		}
 
 		if (running) {
 			simT += dt;
@@ -1533,9 +1585,12 @@ void main(){
 			// the attractor drifts on its own and jolts a little with the music
 			phase = (phase + dt * (CFG.bg.drift + pushBg * 0.05)) % 1;
 
-			// heart morph: ease toward the target shape; reveal the offer when ready
-			morphT += (morphTarget - morphT) * CFG.heart.morphSpeed;
-			if (morphT < 0.0005) morphT = 0; else if (morphT > 0.9995) morphT = 1;
+			// heart morph: ease toward the target shape; reveal the offer when ready.
+			// (frame-based, so a repaint skips it — see the repaint note above)
+			if (!repaint) {
+				morphT += (morphTarget - morphT) * CFG.heart.morphSpeed;
+				if (morphT < 0.0005) morphT = 0; else if (morphT > 0.9995) morphT = 1;
+			}
 			if (wantSwap && heartN){ document.body.classList.add('swap-ready'); wantSwap = false; }
 
 			// background attractor morph: fade to black -> swap type (+ seed) -> fade in

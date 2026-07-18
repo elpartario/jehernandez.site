@@ -381,17 +381,32 @@ const topBtn = document.getElementById('topBtn');
 if (topBtn) topBtn.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
 
 /* ============ FROZEN-BACKGROUND BACKDROP ============
-   index.html screenshots its frozen scene into sessionStorage ('bgShot') each
-   time the overlay opens. Here, on the inner pages, we paint that shot behind
-   the content with the same overlay tint on top — so every page looks like the
-   canvas-index overlay. No shot yet (visitor hasn't entered) = solid color. */
+   index.html screenshots its frozen scene each time the overlay opens, storing
+   BOTH themes ('bgShotDark' / 'bgShotLight'). Here, on the inner pages, we paint
+   the one matching the current theme behind the content, with the same overlay
+   tint on top — so every page looks like the canvas-index overlay.
+
+   Why two images: an inner page has no scene to re-photograph, so if the visitor
+   flips the theme here we can only swap to an image that already exists. Doing so
+   is instant — just re-pointing the CSS custom property, no re-render.
+   No shot yet (visitor never entered the landing) = plain solid colour. */
 if (document.body.classList.contains('page')) {
-	const shot = sessionStorage.getItem('bgShot');
-	if (shot) {
-		// hand the shot to CSS as a custom property; css/site.css paints it as the
-		// BODY's own background (behind all content, no z-index games) with the
-		// themed overlay tint layered on top — see `body.page.has-bgshot` there.
-		document.body.style.setProperty('--bgshot-url', 'url("' + shot + '")');
-		document.body.classList.add('has-bgshot');
-	}
+	const applyShot = () => {
+		const dark = document.documentElement.classList.contains('dark');
+		// the legacy single-key shot is a fallback for a tab that captured before
+		// this became theme-aware; it just means one stale-coloured backdrop
+		const shot = sessionStorage.getItem(dark ? 'bgShotDark' : 'bgShotLight')
+			|| sessionStorage.getItem('bgShot');
+		if (shot) {
+			// hand the shot to CSS as a custom property; css/site.css paints it as the
+			// BODY's own background (behind all content, no z-index games) with the
+			// themed overlay tint layered on top — see `body.page.has-bgshot` there.
+			document.body.style.setProperty('--bgshot-url', 'url("' + shot + '")');
+			document.body.classList.add('has-bgshot');
+		} else {
+			document.body.classList.remove('has-bgshot');
+		}
+	};
+	applyShot();
+	addEventListener('themechange', applyShot);   // swap to the other theme's shot
 }
