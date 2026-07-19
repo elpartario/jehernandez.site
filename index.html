@@ -1407,12 +1407,11 @@ void main(){
 	   pixels while CSS re-inverts for the new theme — that mismatch is what
 	   showed cyan (dark->light) or white-on-black (light->dark). Fix: nudge the
 	   loop to draw exactly ONE frame in the new colours, then re-freeze and
-	   refresh the inner-page screenshot. We pin the smoothed mouse to its frozen
-	   value first, because the sim's `sm = msm` line would otherwise snap the
-	   pose to wherever the cursor has since moved. */
+	   refresh the inner-page screenshot. The frozen pose is protected inside the
+	   loop instead (the `sm = msm` copy is skipped on a repaint) — deliberately
+	   NOT by touching `msm`, which the always-alive mini corner skull follows. */
 	addEventListener('themechange', () => {
 		if (running) return;              // not frozen: the live loop already recolours
-		msm.x = sm.x; msm.y = sm.y;       // keep the frozen pose put for the forced frame
 		running = true;
 		pendingRepaint = true;
 	});
@@ -1593,7 +1592,11 @@ void main(){
 
 		if (running) {
 			simT += dt;
-			sm.x = msm.x; sm.y = msm.y;
+			// A repaint must redraw the FROZEN pose, so it skips this copy. (We do
+			// it here rather than pinning msm, because the mini corner skull follows
+			// msm and stays alive through the freeze — clobbering it made the mini
+			// skull snap to the frozen pose and ease back, i.e. a visible jerk.)
+			if (!repaint) { sm.x = msm.x; sm.y = msm.y; }
 			// the attractor drifts on its own and jolts a little with the music
 			phase = (phase + dt * (CFG.bg.drift + pushBg * 0.05)) % 1;
 

@@ -2019,9 +2019,17 @@ frozen**: it un-freezes for exactly one frame (`running = true` plus a
 and re-photographed, leaving both the live frozen canvas and the stored
 screenshot correct. Three details make it safe:
 
-- **The pose is pinned** (`msm.x/y` are set to `sm.x/y` before the frame) so the
-  skull can't jump to wherever the cursor has drifted during the freeze — the
-  frozen frame recolours in place.
+- **The frozen pose is held by skipping a copy, not by moving the mouse.** There
+  are two pointer values: `sm` (the frozen pose the big skull/heart uses) and
+  `msm` (the live pointer, which keeps tracking the cursor through the freeze).
+  Normally `frame()` does `sm = msm`, which during a repaint would snap the big
+  skull to wherever the cursor has drifted — so that copy is wrapped in
+  `if (!repaint)`.
+  **Do not "fix" this by assigning `msm = sm` instead.** That was the original
+  approach and it caused a visible bug: the **mini corner skull reads `msm`** and
+  stays alive during the freeze, so overwriting it made the mini skull snap to
+  the frozen pose on every theme toggle and then ease back to the cursor — a
+  jerk. Guard the copy; leave `msm` alone.
 - **The repaint advances no time at all.** `frame()` reads the `pendingRepaint`
   flag into a local `repaint`, forces `dt = 0`, and *also* skips the eases that
   step **once per frame rather than per second** — `reactEnv`, `reactMul` and the
@@ -2198,6 +2206,19 @@ What's already in place:
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
 
+### 2026-07-19 — mini corner skull no longer jerks on a theme toggle
+- **Bug**: toggling light/dark with the overlay open made the top-right mini
+  skull snap to an old position and then glide back to the cursor.
+- **Cause**: self-inflicted, from the frozen-repaint fix. Two pointer values
+  exist — `sm` (the frozen pose the big skull uses) and `msm` (the live pointer
+  the **mini** skull follows, which stays alive during the freeze). The repaint
+  handler pinned `msm = sm` to stop the big skull jumping when the loop's
+  `sm = msm` copy ran, but that overwrote the very value the mini skull reads.
+- **Fix**: protect the frozen pose at the copy instead — `sm = msm` is now
+  wrapped in `if (!repaint)` — and the `msm` pin is gone. The big skull still
+  recolours in place; the mini skull keeps tracking the cursor smoothly.
+  Documented in §8.10 with a warning not to reintroduce the pin.
+
 ### 2026-07-18 — frozen repaint keeps the audio displacement
 - **Fixed** the skull/heart snapping to its no-audio shape when the theme was
   toggled with sound on (and that flat state being baked into the screenshot).
@@ -2239,9 +2260,10 @@ are grouped summaries; dates before the first tracked day are approximate.
   it un-freezes for exactly one frame (`pendingRepaint`), and the tail of
   `frame()` re-freezes and re-runs `captureBackground()`. The scene is redrawn
   once in the new theme's colour and re-photographed, so the live frozen canvas
-  *and* the stored screenshot both end up correct. The pose is pinned
-  (`msm = sm`) so the skull doesn't jump to the drifted cursor, and the repaint
-  goes through the normal render path rather than duplicating draw logic.
+  *and* the stored screenshot both end up correct. The frozen pose is held (see
+  the 2026-07-19 entry — originally by pinning `msm = sm`, later corrected), and
+  the repaint goes through the normal render path rather than duplicating draw
+  logic.
 - Also resolves the "screenshot is white particles on black" case: toggling
   light → dark now re-captures in red-on-black, as expected. (§8.10)
 
