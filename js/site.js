@@ -234,19 +234,27 @@ const CUICATL_TEXT = `
 	<p><strong>What is Cuicatl?</strong></p>
 	<p><em>Cuicatl</em> is a Nahuatl word commonly translated as song, singing, or music.
 	In historical Nahua sources, it names a broad field where voice, poetry, rhythm, dance,
-	and memory meet. The phrase <em>in xōchitl in cuīcatl</em> — “flower and song” — is often
+	and memory meet. The phrase <em>in xochitl in cuicatl</em> — “flower and song” — is often
 	used to describe poetry or art. Contemporary works such as Gabriel Pareyón’s <em>Xochicuicatl
 	cuecuechtli</em> and <em>Chicueyi Cuicatl</em> continue to study and dialogue with this longer
 	expressive history.</p>
+	<p>J.E. engages with this practice in a dialogic framework to foster access and exposure
+	for audiences in conversation with his other practice as a form of reinforcing Originary
+	forms of expression via his own discipleship with the legacy of <em>cuicatl</em>.
 	</div>
 	<div lang="es">
 	<p><strong>¿Qué es el Cuicatl?</strong></p>
 	<p><em>Cuicatl</em> es una palabra náhuatl que suele traducirse como canto, cantar o música.
 	En las fuentes nahuas históricas, nombra un campo amplio donde se encuentran la voz, la poesía,
-	el ritmo, la danza y la memoria. La expresión <em>in xōchitl in cuīcatl</em> — «flor y canto» —
+	el ritmo, la danza y la memoria. La expresión <em>in xochitl in cuicatl</em> — «flor y canto» —
 	se usa a menudo para referirse a la poesía o al arte. Obras contemporáneas como <em>Xochicuicatl
 	cuecuechtli</em> y <em>Chicueyi Cuicatl</em>, de Gabriel Pareyón, siguen estudiando y dialogando
 	con esta historia expresiva más larga.</p>
+	<p>J.E. aborda esta práctica desde un marco dialógico con el fin de facilitar el acceso y el 
+	acercamiento de los públicos. En diálogo con sus demás prácticas, este trabajo busca reafirmar 
+	formas originarias de expresión mediante su propio proceso de aprendizaje dentro del legado 
+	del <em>cuicatl</em>.
+
 	</div>
 `;
 
@@ -264,7 +272,7 @@ const DESIGN_TEXT = `
 	</div>
 	<div lang="es">
 	<p><strong>Créditos de diseño web:</strong></p>
-	<p>Sitio web diseñado por J.E. Hernández a partir del trabajo realizado como
+	<p>Sitio diseñado por J.E. Hernández a partir del trabajo realizado como
 	<a href="https://www.yslas.music/" target="_blank" rel="noopener">Yslas</a>, producido por
 	<a href="https://silbaca.tv/" target="_blank" rel="noopener">Sílbaca</a>. Inspirado
 	en <a href="https://www.404zero.com/" target="_blank" rel="noopener">404.zero</a>.</p>
