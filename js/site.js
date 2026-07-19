@@ -52,7 +52,7 @@ const MENU_ICONS = [
    Same link rules as the menu. The year updates itself. */
 const FOOTER_LINKS = [
 	['alkabil.audio', 'https://www.alkabil.audio'],
-	['yslas', 'https://www.yslas.music'],
+	['Yslas', 'https://www.yslas.music'],
 	[{ en: 'Bio', es: 'Biografía' }, 'about'],
 	[{ en: 'My Work', es: 'Mi obra' }, 'work'],
 	[{ en: 'Contact Me', es: 'Contáctame' }, 'contact'],
