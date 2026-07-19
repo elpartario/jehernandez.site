@@ -39,7 +39,7 @@ const MENU_LINKS = [
 	[{ en: 'about', es: 'acerca' }, 'about'],
 	[{ en: 'work', es: 'obra' }, 'work'],
 	[{ en: 'writing', es: 'escritos' }, 'https://jehernandez.substack.com'],
-	[{ en: 'scores', es: 'partituras' }, 'https://alkabilmusic.square.site/'],
+	[{ en: 'scores', es: 'tienda' }, 'https://alkabilmusic.square.site/'],
 	[{ en: 'contact', es: 'contacto' }, 'contact'],
 ];
 /* icon links rendered after the text links (inline SVG, add more if needed) */
