@@ -238,6 +238,9 @@ html[lang="es"] [lang="en"] { display: none; }
    opens and on every inner page. */
 .lang-toggle.hide-landing:not(.docked) { display: none; }
 .lang-toggle.fade { opacity: 0; }   /* the brief fade while it moves between the two */
+/* Suppresses the fade for one frame so dockLang() can hide the toggle INSTANTLY
+   before repositioning it — see the comment there for why that timing matters. */
+.lang-toggle.nofade { transition: none; }
 .lang-opt {
 	font: inherit;
 	font-weight: 400;

@@ -2106,17 +2106,24 @@ the matching copies everywhere. No re-rendering, no reload.
   size, so they scale with it.
   Inner pages have no landing, so `site.js` adds `.docked` immediately; on
   `index.html`, `dockLang()` (called from `setOverlay`) fades it out at the old
-  spot, moves it while invisible, and fades it back in at the new one. It waits
-  **two different delays**, and the asymmetry is deliberate: docking swaps at
-  **300ms** (matching `.lang-toggle`'s `opacity` transition), but **undocking
-  waits 500ms — the full `.lc-wrap` slide** (see its `transition` in
-  `css/site.css`). Docking/undocking moves the toggle between `position: static`
-  (in the wrap's flow, adding width) and `absolute` (adding none); on the way
-  back the wrap ends centred via `translateX(-50%)`, a percentage of its **own
-  width**, so changing that width mid-slide made the date snap to centre. Going
-  the other way the wrap is `left`-anchored with `transform: none`, so the width
-  change is invisible and the quicker swap is fine. **If you retune either CSS
-  duration, update the matching delay in `dockLang()`.**
+  spot, moves it while invisible, and fades it back in at the new one — but
+  **only when docking**. The two directions are deliberately asymmetric, because
+  docking changes `.lc-wrap`'s **width**: docked, the toggle is
+  `position: static` (in the wrap's flow, adding width); undocked, `absolute`
+  (adding none).
+  - **Entering** (docking) the wrap ends `left`-anchored with `transform: none`,
+    so its width doesn't affect where it lands. Safe to take the pretty route:
+    fade out over **300ms** (matching `.lang-toggle`'s `opacity` transition in
+    `css/site.css` — keep the two in step), swap while invisible, fade back in.
+  - **Returning** (undocking) the wrap ends centred via `translateX(-50%)` —
+    half of its **own width**. It must therefore already be at its final,
+    date-only width *before* the 0.5s slide starts, so `dockLang()` undocks
+    **immediately**, adding `.nofade` for one frame so the toggle vanishes
+    instead of visibly leaping, then fades it back in underneath. Delaying that
+    swap (by any amount) makes the date animate toward a centre computed from
+    the wider box, stop short, and snap across when the toggle finally leaves
+    the flow. The `?` button needs no such handling — dropping `overlay-open`
+    sets it `display: none` at t=0 already.
 - **It fades in on the landing at 3s**, just after the skull finishes fading in
   (`CFG.fadeSec`, 2.4s), reusing the hints' `hintIn` animation. The rule is in
   `index.html` and scoped to `body:not(.entered)`, so it only runs on the *first*
@@ -2217,14 +2224,21 @@ are grouped summaries; dates before the first tracked day are approximate.
 ### 2026-07-30 — long-count date no longer snaps when returning to the landing
 - **Bug (most visible on phones)**: leaving the overlay via the corner skull, the
   date slid part-way back toward centre and then jumped the rest of the way.
-- **Cause**: `dockLang()` undocked the EN/ES toggle 300ms into the wrap's 500ms
-  slide. Undocking takes the toggle out of `.lc-wrap`'s flow, shrinking it — and
-  the wrap centres itself with `translateX(-50%)`, a percentage of its own width,
-  so the target moved mid-animation. Phones show it worst because the toggle is a
-  larger share of the wrap's width there. Entering was unaffected: that direction
-  ends `left`-anchored with `transform: none`.
-- **Fix**: undock after the slide completes (500ms) instead of during it; docking
-  still swaps at 300ms. Documented in §8.11. (`index.html`)
+- **Cause**: `dockLang()` delayed undocking the EN/ES toggle, so the toggle was
+  still in `.lc-wrap`'s flow — i.e. the wrap was still *wide* — while the wrap
+  slid back. Since the wrap centres with `translateX(-50%)`, half of its **own**
+  width, it animated toward a centre computed from the wide box, came to rest
+  left of true centre, then jumped once the toggle left the flow. Entering is
+  unaffected: that direction ends `left`-anchored with `transform: none`, where
+  width doesn't matter.
+- **Fix**: undock **immediately**, so the wrap is at its final date-only width
+  before the slide begins; a one-frame `.nofade` hides the toggle so it doesn't
+  visibly leap, then it fades back in underneath. Docking keeps its 300ms
+  fade-move-fade. Documented in §8.11.
+- *(A first attempt delayed the undock to 500ms instead. That only moved the
+  snap to the end of the slide — any delay leaves the wrap measuring wide for
+  the animation. Superseded same day.)*
+- `index.html`, `css/site.css` (new `.lang-toggle.nofade` rule)
 
 ### 2026-07-19 — mini corner skull no longer jerks on a theme toggle
 - **Bug**: toggling light/dark with the overlay open made the top-right mini

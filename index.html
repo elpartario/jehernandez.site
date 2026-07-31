@@ -1395,22 +1395,36 @@ void main(){
 	function dockLang(docked){
 		const box = document.querySelector('.lang-toggle');
 		if (!box) return;
-		/* WHY THE TWO DELAYS. Docking flips the toggle between `position: static`
-		   (in .lc-wrap's flow, so it ADDS to the wrap's width) and `absolute`
-		   (out of flow, adds nothing). On the way OUT the wrap ends centered with
-		   `translateX(-50%)`, a percentage of its OWN width — so undocking partway
-		   through the wrap's 0.5s slide changed that width mid-flight and the date
-		   visibly snapped to centre (worst on phones, where the toggle is a bigger
-		   share of the width). Undocking after the slide settles keeps the width
-		   constant for the whole animation. Docking can stay quick: the wrap ends
-		   `left`-anchored with `transform: none`, so a width change is invisible.
-		   The fade covers the wait either way. Keep 500 in step with .lc-wrap's
-		   0.5s transition and 300 with .lang-toggle's 0.3s opacity (css/site.css). */
-		box.classList.add('fade');
-		setTimeout(() => {
-			box.classList.toggle('docked', docked);
-			box.classList.remove('fade');
-		}, docked ? 300 : 500);
+		/* THE TWO DIRECTIONS ARE NOT SYMMETRIC, because docking changes the WIDTH
+		   of .lc-wrap: docked the toggle is `position: static` (in the wrap's flow,
+		   adding width), undocked it is `absolute` (adding none).
+
+		   RETURNING TO THE LANDING, the wrap ends centred via `translateX(-50%)` —
+		   half of its OWN width. So the wrap must already be at its final,
+		   date-only width when the 0.5s slide begins, or it animates toward a
+		   centre computed from the wider box, stops short of true centre, and
+		   snaps across once the toggle finally leaves the flow. (The "?" button
+		   already vanishes at t=0: dropping `overlay-open` sets it `display:none`
+		   immediately.) So undock IMMEDIATELY, hiding the toggle in the same frame
+		   — `nofade` kills its opacity transition so it disappears rather than
+		   visibly leaping to its new spot — then fade it back in underneath.
+
+		   ENTERING, the wrap ends `left`-anchored with `transform: none`, so its
+		   width doesn't affect where it lands. That direction can take the pretty
+		   route: fade out, move while invisible, fade back in (300ms = the
+		   `.lang-toggle` opacity transition in css/site.css — keep them in step). */
+		if (docked) {
+			box.classList.add('fade');
+			setTimeout(() => {
+				box.classList.add('docked');
+				box.classList.remove('fade');
+			}, 300);
+		} else {
+			box.classList.add('nofade', 'fade');   // hide instantly, no transition
+			box.classList.remove('docked');        // width drops to date-only NOW
+			void box.offsetWidth;                  // flush, so the next line animates
+			box.classList.remove('nofade', 'fade');// fade back in at the new spot
+		}
 	}
 
 	/* Recolour the FROZEN scene when the theme is toggled behind the overlay.
