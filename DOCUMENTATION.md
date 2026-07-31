@@ -2106,9 +2106,17 @@ the matching copies everywhere. No re-rendering, no reload.
   size, so they scale with it.
   Inner pages have no landing, so `site.js` adds `.docked` immediately; on
   `index.html`, `dockLang()` (called from `setOverlay`) fades it out at the old
-  spot, moves it while invisible, and fades it back in at the new one. **The
-  300ms in `dockLang()` must match `.lang-toggle`'s `opacity` transition in
-  `css/site.css`** — change both together or you'll see it jump.
+  spot, moves it while invisible, and fades it back in at the new one. It waits
+  **two different delays**, and the asymmetry is deliberate: docking swaps at
+  **300ms** (matching `.lang-toggle`'s `opacity` transition), but **undocking
+  waits 500ms — the full `.lc-wrap` slide** (see its `transition` in
+  `css/site.css`). Docking/undocking moves the toggle between `position: static`
+  (in the wrap's flow, adding width) and `absolute` (adding none); on the way
+  back the wrap ends centred via `translateX(-50%)`, a percentage of its **own
+  width**, so changing that width mid-slide made the date snap to centre. Going
+  the other way the wrap is `left`-anchored with `transform: none`, so the width
+  change is invisible and the quicker swap is fine. **If you retune either CSS
+  duration, update the matching delay in `dockLang()`.**
 - **It fades in on the landing at 3s**, just after the skull finishes fading in
   (`CFG.fadeSec`, 2.4s), reusing the hints' `hintIn` animation. The rule is in
   `index.html` and scoped to `body:not(.entered)`, so it only runs on the *first*
@@ -2205,6 +2213,18 @@ What's already in place:
 
 Newest first. This starts partway through the project, so the earliest entries
 are grouped summaries; dates before the first tracked day are approximate.
+
+### 2026-07-30 — long-count date no longer snaps when returning to the landing
+- **Bug (most visible on phones)**: leaving the overlay via the corner skull, the
+  date slid part-way back toward centre and then jumped the rest of the way.
+- **Cause**: `dockLang()` undocked the EN/ES toggle 300ms into the wrap's 500ms
+  slide. Undocking takes the toggle out of `.lc-wrap`'s flow, shrinking it — and
+  the wrap centres itself with `translateX(-50%)`, a percentage of its own width,
+  so the target moved mid-animation. Phones show it worst because the toggle is a
+  larger share of the wrap's width there. Entering was unaffected: that direction
+  ends `left`-anchored with `transform: none`.
+- **Fix**: undock after the slide completes (500ms) instead of during it; docking
+  still swaps at 300ms. Documented in §8.11. (`index.html`)
 
 ### 2026-07-19 — mini corner skull no longer jerks on a theme toggle
 - **Bug**: toggling light/dark with the overlay open made the top-right mini

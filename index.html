@@ -1395,11 +1395,22 @@ void main(){
 	function dockLang(docked){
 		const box = document.querySelector('.lang-toggle');
 		if (!box) return;
+		/* WHY THE TWO DELAYS. Docking flips the toggle between `position: static`
+		   (in .lc-wrap's flow, so it ADDS to the wrap's width) and `absolute`
+		   (out of flow, adds nothing). On the way OUT the wrap ends centered with
+		   `translateX(-50%)`, a percentage of its OWN width — so undocking partway
+		   through the wrap's 0.5s slide changed that width mid-flight and the date
+		   visibly snapped to centre (worst on phones, where the toggle is a bigger
+		   share of the width). Undocking after the slide settles keeps the width
+		   constant for the whole animation. Docking can stay quick: the wrap ends
+		   `left`-anchored with `transform: none`, so a width change is invisible.
+		   The fade covers the wait either way. Keep 500 in step with .lc-wrap's
+		   0.5s transition and 300 with .lang-toggle's 0.3s opacity (css/site.css). */
 		box.classList.add('fade');
 		setTimeout(() => {
 			box.classList.toggle('docked', docked);
 			box.classList.remove('fade');
-		}, 300);
+		}, docked ? 300 : 500);
 	}
 
 	/* Recolour the FROZEN scene when the theme is toggled behind the overlay.
