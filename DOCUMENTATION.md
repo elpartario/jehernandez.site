@@ -220,7 +220,7 @@ between them (see section 8), and **everything follows** — the inner pages, th
 overlay, and the landing. The landing has its own trio (`--landing-bg`,
 `--landing-icon`, `--landing-main`) so it can be black/red in dark and
 white/black in light without dragging the inner pages' red hovers with it; its
-*particle* colours can't live in CSS at all (WebGL) and are in `index.html` —
+*particle* colors can't live in CSS at all (WebGL) and are in `index.html` —
 see [8.1](#81-light--dark).
 
 | Variable | Light | Dark | Used for |
@@ -1321,7 +1321,7 @@ after the front page: a few KB (everything's cached).
 **The landing follows the theme too.** Pick light and the whole scene flips:
 white page, **black particles**, black chrome (date, teponaztli, hints, numerals,
 morph buttons). Dark is the original: black page, red particles, red chrome. It's
-purely a colour change — the geometry, glow, mouse tracking, audio reactivity and
+purely a color change — the geometry, glow, mouse tracking, audio reactivity and
 every morph behave identically in both.
 
 Because the toggle only exists once the site is open, the flow is: enter the
@@ -1345,7 +1345,7 @@ Two halves, because WebGL can't read CSS:
   and overridden in `html.dark`. They're separate from `--color-main`/
   `--color-icon` on purpose: those stay red for the *inner pages'* link hovers.
   Keep the icon/main pairing dim → lit so hover feedback survives in both themes.
-- **The particles** are the `DARK ? … : …` colour block in `index.html`
+- **The particles** are the `DARK ? … : …` color block in `index.html`
   (`SKULL_COL`, `BG_COL`, `MINI_COL`), re-read on the `themechange` event.
 
 **How black particles are possible (the important bit).** The scene draws with
@@ -1357,12 +1357,12 @@ always but in **white**, and CSS then **inverts the finished canvas**: the black
 clear becomes a white page, the white particles become black. Same geometry, same
 accumulation — mirrored. Hence:
 
-- `SKULL_COL` / `BG_COL` are **pre-inversion** colours: white here *looks* black.
+- `SKULL_COL` / `BG_COL` are **pre-inversion** colors: white here *looks* black.
 - The invert rule lists `canvas#gl`, `canvas#swap`, `canvas#bgPrev` in
   `css/site.css`. **`canvas#mini` is deliberately excluded** — it also lives on
   the inner pages, where it must follow `--ink` — so it gets its real, final
-  colour from `MINI_COL` instead. If you add a landing canvas, add it to that
-  rule *and* give it a pre-inversion colour.
+  color from `MINI_COL` instead. If you add a landing canvas, add it to that
+  rule *and* give it a pre-inversion color.
 - **`captureBackground()` re-applies the inversion by hand** (`c.filter =
   'invert(1)'`). A CSS filter never touches a canvas's actual pixels, so a raw
   copy would hand the inner pages the un-inverted (black) scene — this is the one
@@ -1469,7 +1469,7 @@ arrow exactly:
 - appears **3s after its own button becomes ready** (`body.swap-ready` /
   `body.bg-ready` — so each starts on its own clock, not the page's),
 - fades in, blinks and bobs using the **same** `hintIn` / `hintPulse` /
-  `hintBob` animations, at the same size, colour and timing,
+  `hintBob` animations, at the same size, color and timing,
 - **retires forever on the first click of its button**: the click handler adds
   `.retired`, which fades it out with the same `hintOut` the teponaztli uses.
   Only the arrow retires — the button and its canvas are untouched.
@@ -1966,12 +1966,12 @@ on top**, which is why the tint gradient is listed before the shot.)
   instant with no re-render. This exists because an inner page has **no scene to
   re-photograph**: if the visitor flips the theme over there, the only thing we
   can do is show an image that already exists. (A tab that captured before this
-  was theme-aware falls back to the old single `bgShot` key — one stale-coloured
+  was theme-aware falls back to the old single `bgShot` key — one stale-colored
   backdrop until the next capture.)
 
   Rather than render the scene twice, both looks are **derived from the one
   canvas**. That works because the **red channel is the same intensity in either
-  theme** — the draw colours are `.55` (background) and `1.0` (skull) in red both
+  theme** — the draw colors are `.55` (background) and `1.0` (skull) in red both
   times, and only green/blue differ:
 
   | Wanted | Derivation |
@@ -1999,7 +1999,7 @@ it's worth understanding before touching either piece.
 
 The landing gets its light mode by drawing the scene in **white** and letting CSS
 `filter: invert(1)` flip it (see §8.1 — additive blending physically cannot draw
-dark particles onto a light page). That means the **draw colour and the CSS
+dark particles onto a light page). That means the **draw color and the CSS
 filter must always agree**: dark → draw red, no filter; light → draw white,
 filter on.
 
@@ -2015,7 +2015,7 @@ result was visibly wrong:
 The fix is a `themechange` listener in `index.html` that only acts **when
 frozen**: it un-freezes for exactly one frame (`running = true` plus a
 `pendingRepaint` flag), and the tail of `frame()` then re-freezes and re-runs
-`captureBackground()`. So the scene is redrawn once in the new theme's colour
+`captureBackground()`. So the scene is redrawn once in the new theme's color
 and re-photographed, leaving both the live frozen canvas and the stored
 screenshot correct. Three details make it safe:
 
@@ -2040,7 +2040,7 @@ screenshot correct. Three details make it safe:
   by `running`), and with the audio suspended those values decay to ~0 within a
   second — so the assignment is gated on `running`, or a repaint would redraw the
   skull/heart flat, as though the sound had been off. The result is a frame that
-  is pixel-identical to the frozen one apart from the colour: the particles do
+  is pixel-identical to the frozen one apart from the color: the particles do
   not creep forward. **If you add new per-frame state, gate it on `!repaint`** or
   toggling the theme will nudge the frozen scene again.
 - **The repaint is a flag, not a direct draw.** The redraw happens inside the
@@ -2048,7 +2048,7 @@ screenshot correct. Three details make it safe:
   frame — no duplicate render logic to keep in sync.
 
 If you ever change how freezing works, keep this rule: *any* state that changes
-the scene's colour must force one repaint while frozen, or the canvas and the
+the scene's color must force one repaint while frozen, or the canvas and the
 screenshot will drift out of step with the theme again.
 
 ---
@@ -2250,7 +2250,7 @@ are grouped summaries; dates before the first tracked day are approximate.
   `sm = msm` copy ran, but that overwrote the very value the mini skull reads.
 - **Fix**: protect the frozen pose at the copy instead — `sm = msm` is now
   wrapped in `if (!repaint)` — and the `msm` pin is gone. The big skull still
-  recolours in place; the mini skull keeps tracking the cursor smoothly.
+  recolors in place; the mini skull keeps tracking the cursor smoothly.
   Documented in §8.10 with a warning not to reintroduce the pin.
 
 ### 2026-07-18 — frozen repaint keeps the audio displacement
@@ -2265,17 +2265,17 @@ are grouped summaries; dates before the first tracked day are approximate.
   the live, decaying push. (§8.10)
 
 ### 2026-07-18 — frozen repaint no longer advances time; per-theme screenshots
-- **The theme-toggle repaint is now a pure recolour.** It previously ran one
+- **The theme-toggle repaint is now a pure recolor.** It previously ran one
   normal frame, so the particles crept forward by up to 50 ms. `frame()` now
   forces `dt = 0` for a repaint *and* skips the eases that step per-frame rather
   than per-second (`reactEnv`, `reactMul`, `morphT`), reuses the last real
   frame's audio push (`lastPush`/`lastPushBg`) instead of re-reading the
-  analyser, and skips pointer smoothing. The frozen scene now recolours without
+  analyser, and skips pointer smoothing. The frozen scene now recolors without
   moving. New per-frame state must be gated on `!repaint`. (§8.10)
 - **The frozen backdrop is now stored per theme** (`bgShotDark` /
   `bgShotLight`), so toggling light/dark on an *inner* page — where there's no
   scene to re-photograph — instantly swaps to the matching image instead of
-  keeping the old theme's colours. `js/site.js` re-picks on `themechange`; it's
+  keeping the old theme's colors. `js/site.js` re-picks on `themechange`; it's
   just a `--bgshot-url` swap, no re-render.
 - Both looks are **derived from the single captured canvas** (the red channel is
   the same intensity in either theme), so there's no second render pass:
@@ -2284,7 +2284,7 @@ are grouped summaries; dates before the first tracked day are approximate.
   green/blue on background pixels only. (§8.10)
 
 ### 2026-07-17 — theme toggle while the scene is frozen ("cyan background" fix)
-- **Fixed** the frozen landing showing the wrong colours after a theme toggle.
+- **Fixed** the frozen landing showing the wrong colors after a theme toggle.
   Opening the overlay freezes the render loop, so flipping the theme swapped the
   CSS `invert` filter while the canvas still held pixels drawn for the *old*
   theme: dark → light inverted the **red** particles to **cyan on white**, and
@@ -2293,7 +2293,7 @@ are grouped summaries; dates before the first tracked day are approximate.
 - **Fix**: a `themechange` listener in `index.html` that acts only when frozen —
   it un-freezes for exactly one frame (`pendingRepaint`), and the tail of
   `frame()` re-freezes and re-runs `captureBackground()`. The scene is redrawn
-  once in the new theme's colour and re-photographed, so the live frozen canvas
+  once in the new theme's color and re-photographed, so the live frozen canvas
   *and* the stored screenshot both end up correct. The frozen pose is held (see
   the 2026-07-19 entry — originally by pinning `msm = sm`, later corrected), and
   the repaint goes through the normal render path rather than duplicating draw
@@ -2311,13 +2311,13 @@ are grouped summaries; dates before the first tracked day are approximate.
 
 ### 2026-07-17 — landing follows the theme, mobile backdrop fix, menu fit
 - **The landing now follows light/dark** (§8.1). Light = white scene, black
-  particles, black chrome; dark = the original black/red. Colour only — geometry,
+  particles, black chrome; dark = the original black/red. color only — geometry,
   glow, reactivity and the morphs are untouched. Chrome moved to new
   `--landing-bg`/`--landing-icon`/`--landing-main` vars (kept separate from
   `--color-*`, which stay red for the inner pages' hovers); particles come from a
   `DARK ? … : …` block in `index.html` that re-reads on `themechange`. Because
   additive blending can't darken a white page, light mode draws the scene in
-  **white and CSS-inverts the canvas** — so those JS colours are pre-inversion.
+  **white and CSS-inverts the canvas** — so those JS colors are pre-inversion.
   `captureBackground()` re-applies the inversion by hand, since a CSS filter
   doesn't touch canvas pixels. `404.html` got the same treatment.
 - **Fixed the frozen backdrop on mobile** (§8.10). `background-attachment: fixed`
