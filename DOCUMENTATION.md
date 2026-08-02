@@ -2223,10 +2223,10 @@ are grouped summaries; dates before the first tracked day are approximate.
 
 ### 2026-07-30 — long-count date no longer snaps when returning to the landing
 - **Bug (most visible on phones)**: leaving the overlay via the corner skull, the
-  date slid part-way back toward centre and then jumped the rest of the way.
+  date slid part-way back toward center and then jumped the rest of the way.
 - **Cause**: `dockLang()` delayed undocking the EN/ES toggle, so the toggle was
   still in `.lc-wrap`'s flow — i.e. the wrap was still *wide* — while the wrap
-  slid back. Since the wrap centres with `translateX(-50%)`, half of its **own**
+  slid back. Since the wrap centers with `translateX(-50%)`, half of its **own**
   width, it animated toward a centre computed from the wide box, came to rest
   left of true centre, then jumped once the toggle left the flow. Entering is
   unaffected: that direction ends `left`-anchored with `transform: none`, where
